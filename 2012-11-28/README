@@ -1,0 +1,21 @@
+macIll.read1.fastq
+macIll.read2.fastq
+	Rhesus macaque exome sequenced at BGI
+	Captured using _____
+	Sequenced on Illumina _____
+
+macIll100.read1.fastq
+macIll100.read2.fastq
+	First 100 reads of above for testing purposes
+
+george_1.fastq
+george_2.fastq
+	Rhesus macaque sequenced by George et al 20__
+	Captured using _____
+	Sequenced on Illumina _____
+	
+vallender_1.fastq
+vallender_2.fastq
+	Rhesus macaque sequenced by Vallender et al 20__
+	Captured using _____
+	Sequenced on Illumina _____
