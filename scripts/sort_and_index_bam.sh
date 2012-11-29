@@ -11,6 +11,8 @@ if [ -z "$1" ]; then
 	exit 1;
 fi
 
+GENOME_CODE=$1
+
 # Sort BAM
 # Output file is *.sorted.bam
 

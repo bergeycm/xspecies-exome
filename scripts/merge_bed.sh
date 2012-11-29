@@ -11,6 +11,6 @@ if [ -z "$1" ]; then
 	exit 1;
 fi
 
-echo "---${BEDTOOLS}/mergeBed -i $1  -nms > ${1}_MERGED;"
+${BEDTOOLS}/mergeBed -i $1  -nms > ${1}_MERGED;
 	
 exit;

@@ -11,7 +11,6 @@ if [ -z "$2" ]; then
 	exit 1;
 fi
 
-# Infer genome code from genome FASTA filename
 GENOME_CODE=$2
 
 $SAMTOOLS/samtools view -b -t ${1} -o results/bwa.${GENOME_CODE}.sam.bam results/bwa.${GENOME_CODE}.sam

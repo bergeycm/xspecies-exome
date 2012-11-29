@@ -14,7 +14,6 @@ fi
 # Strip ending from $1 (fasta)
 GENOME_PATH=$(echo $1 | sed 's/.[^.]*$//g')
 
-# Infer genome code from genome FASTA filename
 GENOME_CODE=$2
 
 $BWA/bwa aln $BWA_ALN_PARAM $GENOME_PATH $READ1 > results/read1.bwa.${GENOME_CODE}.sai

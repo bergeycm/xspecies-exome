@@ -23,9 +23,15 @@ PROTO_2ND_BWA_INDEX = $(addprefix ${2ND_GENOME_FA}, ${BWA_INDEX_ENDINGS})
 
 index_genome : ${HUMAN_GENOME_FA}i ${HUMAN_BWA_INDEX} ${2ND_GENOME_FA}i ${2ND_BWA_INDEX}
 merge_beds : ${TARGETS}_MERGED ${CCDS}_MERGED
-liftover_beds : ${TARGETS} ${CCDS} ${TARGETS}_2nd_liftover.bed ${CCDS}_2nd_liftover.bed ${TARGETS}_2nd_liftover.unmapped.bed ${CCDS}_2nd_liftover.unmapped.bed results/liftOver_output.txt ${TARGETS}_2nd_liftover.bed_MERGED ${CCDS}_2nd_liftover.bed_MERGED
+liftover_beds : ${TARGETS} ${CCDS} ${TARGETS}_2nd_liftover.bed ${CCDS}_2nd_liftover.bed ${TARGETS}_2nd_liftover.unmapped.bed ${CCDS}_2nd_liftover.unmapped.bed results/liftOver_output.txt ${TARGETS}_2nd_liftover.bed_MERGED ${CCDS}_2nd_liftover.bed_MERGED 
+align : results/read*.bwa.*.sai
+sampe : results/bwa.*.sam
+sam2bam : results/bwa.*.sam.bam
+sort_and_index_bam : results/bwa.*.sam.bam.sorted.bam
+flagstat_idxstats : results/flagstat_and_idxstats_output.txt
 
-all : ${HUMAN_GENOME_FA}i ${HUMAN_BWA_INDEX} ${2ND_GENOME_FA}i ${2ND_BWA_INDEX} ${TARGETS}_MERGED ${CCDS}_MERGED ${TARGETS}_2nd_liftover.bed ${CCDS}_2nd_liftover.bed ${TARGETS}_2nd_liftover.unmapped.bed ${CCDS}_2nd_liftover.unmapped.bed results/liftOver_output.txt ${TARGETS}_2nd_liftover.bed_MERGED ${CCDS}_2nd_liftover.bed_MERGED
+all : ${HUMAN_GENOME_FA}i ${HUMAN_BWA_INDEX} ${2ND_GENOME_FA}i ${2ND_BWA_INDEX} ${TARGETS}_MERGED ${CCDS}_MERGED ${TARGETS}_2nd_liftover.bed ${CCDS}_2nd_liftover.bed ${TARGETS}_2nd_liftover.unmapped.bed ${CCDS}_2nd_liftover.unmapped.bed results/liftOver_output.txt ${TARGETS}_2nd_liftover.bed_MERGED ${CCDS}_2nd_liftover.bed_MERGED results/read*.bwa.*.sai results/bwa.*.sam results/bwa.*.sam.bam results/bwa.*.sam.bam.sorted.bam results/flagstat_and_idxstats_output.txt
+
 
 # Hack to be able to export Make variables to child scripts
 MAKE_ENV := $(shell echo '$(.VARIABLES)' | awk -v RS=' ' '/^[a-zA-Z0-9]+$$/')
@@ -114,7 +120,7 @@ results/read1.bwa.other.sai : ${BWA}/* ${READS1} ${READS2} ${2ND_GENOME_FA}i scr
 	${SHELL_EXPORT} ./scripts/align.sh ${2ND_GENOME_FA} other;
 
 # -------------------------------------------------------------------------------------- #
-# --- sampe
+# --- Run sampe to generate SAM files
 # -------------------------------------------------------------------------------------- #
 
 # sampe output (*.sam) depends on *.sai files and sampe.sh
@@ -142,14 +148,21 @@ results/bwa.other.sam.bam : results/bwa.other.sam ${SAMTOOLS}/* ${2ND_GENOME_FA}
 # -------------------------------------------------------------------------------------- #
 
 # Sorted BAM file depends on unsorted BAM file and scripts/sort_and_index_bam.sh
-results/bwa.human.sam.bam.sorted.bam : results/bwa.human.sam.bam  scripts/sort_and_index_bam.sh
+results/bwa.human.sam.bam.sorted.bam : results/bwa.human.sam.bam scripts/sort_and_index_bam.sh
 	@echo "# === Sorting and Indexing BAM file for human genome ========================== #";
 	${SHELL_EXPORT} ./scripts/sort_and_index_bam.sh human;
-results/bwa.other.sam.bam.sorted.bam : results/bwa.other.sam.bam  scripts/sort_and_index_bam.sh
+results/bwa.other.sam.bam.sorted.bam : results/bwa.other.sam.bam scripts/sort_and_index_bam.sh
 	@echo "# === Sorting and Indexing BAM file for other genome ========================== #";
 	${SHELL_EXPORT} ./scripts/sort_and_index_bam.sh other;
 
 # -------------------------------------------------------------------------------------- #
-# --- Get info with flagstat and idxstats
+# --- Analyze alignment output with flagstat and idxstats
 # -------------------------------------------------------------------------------------- #
+
+results/flagstat_and_idxstats_output.txt : results/bwa.human.sam.bam.sorted.bam scripts/flagstat_idxstats.sh
+	@echo "# === Analyzing alignment output for human genome ============================= #";
+	${SHELL_EXPORT} ./scripts/flagstat_idxstats.sh human;
+results/flagstat_and_idxstats_output.txt : results/bwa.other.sam.bam.sorted.bam scripts/flagstat_idxstats.sh
+	@echo "# === Analyzing alignment output for other genome ============================= #";
+	${SHELL_EXPORT} ./scripts/flagstat_idxstats.sh other;
 
