@@ -37,12 +37,12 @@ SHELL_EXPORT := $(foreach v,$(MAKE_ENV),$(v)='$($(v))')
 
 # The .fai output of samtools depends on the genome, BWA, samtools, & index_genome.sh
 ${HUMAN_GENOME_FA}i : ${HUMAN_GENOME_FA} ${BWA}/* ${SAMTOOLS}/* scripts/index_genome.sh
-	@echo "# === Indexing human genome === #";
+	@echo "# === Indexing human genome =================================================== #";
 	${SHELL_EXPORT} ./scripts/index_genome.sh ${HUMAN_GENOME_FA};
 	@sleep 2
 	@touch ${HUMAN_GENOME_FA}i ${HUMAN_BWA_INDEX}
 ${2ND_GENOME_FA}i : ${2ND_GENOME_FA} ${BWA}/* ${SAMTOOLS}/* scripts/index_genome.sh
-	@echo "# === Indexing secondary genome === #";
+	@echo "# === Indexing secondary genome =============================================== #";
 	${SHELL_EXPORT} ./scripts/index_genome.sh ${2ND_GENOME_FA};
 	@sleep 2
 	@touch ${2ND_GENOME_FA}i ${2ND_BWA_INDEX}
@@ -60,11 +60,11 @@ ${2ND_BWA_INDEX} : ${2ND_GENOME_FA}i
 
 # The BED file of merged target intervals depends on the original targets BED, bedtools, & merge_bed.sh
 ${TARGETS}_MERGED : ${BEDTOOLS}/* ${TARGETS} scripts/merge_bed.sh
-	@echo "# === Merging targets BED === #";
+	@echo "# === Merging targets BED ===================================================== #";
 	${SHELL_EXPORT} ./scripts/merge_bed.sh ${TARGETS};
 
 ${CCDS}_MERGED : ${BEDTOOLS}/* ${CCDS} scripts/merge_bed.sh
-	@echo "# === Merging CCDS BED === #";
+	@echo "# === Merging CCDS BED ======================================================== #";
 	${SHELL_EXPORT} ./scripts/merge_bed.sh ${CCDS};
 
 # -------------------------------------------------------------------------------------- #
@@ -73,10 +73,10 @@ ${CCDS}_MERGED : ${BEDTOOLS}/* ${CCDS} scripts/merge_bed.sh
 
 # The LiftOver'd BED files depend on LiftOver, the chain file, the original BED, & liftOver_BED.sh
 ${TARGETS}_2nd_liftover.bed : ${LIFTOVER} ${CHAIN} ${TARGETS} scripts/liftOver_BED.sh
-	@echo "# === LiftingOver targets BED === #";
+	@echo "# === LiftingOver targets BED ================================================= #";
 	${SHELL_EXPORT} ./scripts/liftOver_BED.sh ${TARGETS};
 ${CCDS}_2nd_liftover.bed : ${LIFTOVER} ${CHAIN} ${CCDS} scripts/liftOver_BED.sh
-	@echo "# === LiftingOver CCDS BED === #";
+	@echo "# === LiftingOver CCDS BED ==================================================== #";
 	${SHELL_EXPORT} ./scripts/liftOver_BED.sh ${CCDS};
 
 # Other output files from LiftingOvering depend on the above mentioned output BED file
@@ -107,23 +107,47 @@ ${CCDS}_2nd_liftover.bed_MERGED : ${BEDTOOLS}/* ${CCDS}_2nd_liftover.bed scripts
 
 # Alignment output (*.sai) depends on bwa, the reads FASTAs, the genome (index), and align.sh
 results/read1.bwa.human.sai : ${BWA}/* ${READS1} ${READS2} ${HUMAN_GENOME_FA}i scripts/align.sh
-	@echo "# === Aligning reads to human genome === #";
+	@echo "# === Aligning reads to human genome ========================================== #";
 	${SHELL_EXPORT} ./scripts/align.sh ${HUMAN_GENOME_FA} human;
 results/read1.bwa.other.sai : ${BWA}/* ${READS1} ${READS2} ${2ND_GENOME_FA}i scripts/align.sh
-	@echo "# === Aligning reads to human genome === #";
+	@echo "# === Aligning reads to human genome ========================================== #";
 	${SHELL_EXPORT} ./scripts/align.sh ${2ND_GENOME_FA} other;
 
 # -------------------------------------------------------------------------------------- #
 # --- sampe
 # -------------------------------------------------------------------------------------- #
 
+# sampe output (*.sam) depends on *.sai files and sampe.sh
+results/bwa.human.sam : results/read*.bwa.human.sai scripts/sampe.sh
+	@echo "# === Combining reads to make SAM file for human genome ======================= #";
+	${SHELL_EXPORT} ./scripts/sampe.sh ${HUMAN_GENOME_FA} human;
+results/bwa.other.sam : results/read*.bwa.other.sai scripts/sampe.sh
+	@echo "# === Combining reads to make SAM file for other genome ======================= #";
+	${SHELL_EXPORT} ./scripts/sampe.sh ${2ND_GENOME_FA} other;
+
 # -------------------------------------------------------------------------------------- #
 # --- Convert SAM file to BAM file
 # -------------------------------------------------------------------------------------- #
 
+# BAM file depends on SAM file, samtools, genome .fai index, and scripts/sam2bam.sh
+results/bwa.human.sam.bam : results/bwa.human.sam ${SAMTOOLS}/* ${HUMAN_GENOME_FA}i scripts/sam2bam.sh
+	@echo "# === Converting SAM file to BAM file for human genome ======================== #";
+	${SHELL_EXPORT} ./scripts/sam2bam.sh ${HUMAN_GENOME_FA}i human;
+results/bwa.other.sam.bam : results/bwa.other.sam ${SAMTOOLS}/* ${2ND_GENOME_FA}i scripts/sam2bam.sh
+	@echo "# === Converting SAM file to BAM file for other genome ======================== #";
+	${SHELL_EXPORT} ./scripts/sam2bam.sh ${2ND_GENOME_FA}i other;
+
 # -------------------------------------------------------------------------------------- #
 # --- Sort and index BAM
 # -------------------------------------------------------------------------------------- #
+
+# Sorted BAM file depends on unsorted BAM file and scripts/sort_and_index_bam.sh
+results/bwa.human.sam.bam.sorted.bam : results/bwa.human.sam.bam  scripts/sort_and_index_bam.sh
+	@echo "# === Sorting and Indexing BAM file for human genome ========================== #";
+	${SHELL_EXPORT} ./scripts/sort_and_index_bam.sh human;
+results/bwa.other.sam.bam.sorted.bam : results/bwa.other.sam.bam  scripts/sort_and_index_bam.sh
+	@echo "# === Sorting and Indexing BAM file for other genome ========================== #";
+	${SHELL_EXPORT} ./scripts/sort_and_index_bam.sh other;
 
 # -------------------------------------------------------------------------------------- #
 # --- Get info with flagstat and idxstats

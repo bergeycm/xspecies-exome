@@ -23,11 +23,11 @@ echo "1 is $1\n";
 cat $1 | sed s'/$/\t/' | awk '{ print $0,NR }' > ${1}_w_ids
 
 # Human target BED to secondary genome
-#$LIFTOVER/liftOver -minMatch=0.1 \
-#	${1}_w_ids \
-#	$CHAINFILE \
-#	${1}_2nd_liftover.bed \
-#	${1}_2nd_liftover.unmapped.bed
+$LIFTOVER/liftOver -minMatch=0.1 \
+	${1}_w_ids \
+	$CHAINFILE \
+	${1}_2nd_liftover.bed \
+	${1}_2nd_liftover.unmapped.bed
 
 # Output lines in original human targets that found matches in secondary genome
 # In other words, output humans that have the same ID as is found in secondary genome
