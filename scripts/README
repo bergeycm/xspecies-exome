@@ -1,0 +1,9 @@
+index_genome.sh
+	Index the genome using BWA and samtools
+	Approx. runtime = 77 min. on hg19 on NYU HPC
+merge_bed.sh
+	Merge overlapping intervals in BED file using bedtools
+	Approx. runtime = ???
+liftOver_BED.sh
+	LiftOver BED files into coordinates of the secondary genome
+	Approx. runtime = ???
