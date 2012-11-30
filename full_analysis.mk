@@ -103,9 +103,40 @@ ${CCDS}_2nd_liftover.bed_MERGED : ${BEDTOOLS}/* ${CCDS}_2nd_liftover.bed scripts
 	${SHELL_EXPORT} ./scripts/merge_bed.sh ${CCDS}_hg_liftover.bed;
 
 # -------------------------------------------------------------------------------------- #
+# --- Get intersection of CCDS and targets
+# -------------------------------------------------------------------------------------- #
+
+# tr_2
+
+# -------------------------------------------------------------------------------------- #
+# --- Compute summary stats on targeted intervals, CCDS, and their intersection
+# -------------------------------------------------------------------------------------- #
+
+# tr_4
+
+# -------------------------------------------------------------------------------------- #
+# --- Analyze reads with FastQC. Total sequence bp, Maximum possible sequence depth
+# -------------------------------------------------------------------------------------- #
+
+# bep_1_1
+
+# -------------------------------------------------------------------------------------- #
 # --- Filter and trim reads
 # -------------------------------------------------------------------------------------- #
 
+# bep_1_2
+
+# -------------------------------------------------------------------------------------- #
+# --- Remove pairs whose partners were filtered, using cdbfasta & cdbyank
+# -------------------------------------------------------------------------------------- #
+
+# bep_1_3
+
+# -------------------------------------------------------------------------------------- #
+# --- [Optional] randomly subsample reads, if say you want to compare two different runs
+# -------------------------------------------------------------------------------------- #
+
+# bep_3
 
 # -------------------------------------------------------------------------------------- #
 # --- Align reads to genome with BWA
@@ -159,10 +190,86 @@ results/bwa.other.sam.bam.sorted.bam : results/bwa.other.sam.bam scripts/sort_an
 # --- Analyze alignment output with flagstat and idxstats
 # -------------------------------------------------------------------------------------- #
 
-results/flagstat_and_idxstats_output.txt : results/bwa.human.sam.bam.sorted.bam scripts/flagstat_idxstats.sh
+results/flagstat_and_idxstats_output.txt : results/bwa.human.sam.bam.sorted.bam results/bwa.other.sam.bam.sorted.bam scripts/flagstat_idxstats.sh
 	@echo "# === Analyzing alignment output for human genome ============================= #";
 	${SHELL_EXPORT} ./scripts/flagstat_idxstats.sh human;
-results/flagstat_and_idxstats_output.txt : results/bwa.other.sam.bam.sorted.bam scripts/flagstat_idxstats.sh
 	@echo "# === Analyzing alignment output for other genome ============================= #";
 	${SHELL_EXPORT} ./scripts/flagstat_idxstats.sh other;
+
+# -------------------------------------------------------------------------------------- #
+# --- Calculate coverage of targeted regions
+# -------------------------------------------------------------------------------------- #
+
+# cov_0_1
+
+# -------------------------------------------------------------------------------------- #
+# --- Extract Number of bases with greater than 1x coverage, target region lengths, and 
+# --- % coverages from coverageBed output
+# -------------------------------------------------------------------------------------- #
+
+# cov_0_1
+
+# -------------------------------------------------------------------------------------- #
+# --- Run coverageBed with histogram option
+# -------------------------------------------------------------------------------------- #
+
+# cov_0_2
+
+# -------------------------------------------------------------------------------------- #
+# --- Get simple percentage of target covered by at least one read
+# -------------------------------------------------------------------------------------- #
+
+# cov_1
+
+# -------------------------------------------------------------------------------------- #
+# --- Calculate avg coverage of intervals in CCDS
+# -------------------------------------------------------------------------------------- #
+
+# cov_2
+
+# -------------------------------------------------------------------------------------- #
+# --- Total target BP
+# --- Report percentage and count of target bp covered by at least N reads
+# --- Print bp count and percentage of target covered by N reads
+# --- Get average percent coverage of each interval
+# --- Average coverage of basepair in exome intervals
+# -------------------------------------------------------------------------------------- #
+
+# cov_2_1/summarize_covBed.R
+
+# -------------------------------------------------------------------------------------- #
+# For each sample, calculate number of targeted exons covered in their entirety
+# at a miminum of 5x 10x and 20x coverage. Make plot and table.
+# -------------------------------------------------------------------------------------- #
+
+# cov_3
+
+# -------------------------------------------------------------------------------------- #
+# --- Get FASTA of sequences from reference genome that overlap targets
+# -------------------------------------------------------------------------------------- #
+
+# get_targeted_seqs_from_genomes
+
+# -------------------------------------------------------------------------------------- #
+# --- Align with Muscle, get pairwise distance with PAUP, get GC%, get number of indels
+# -------------------------------------------------------------------------------------- #
+
+# compare_hg_rhe_seqs.pl
+
+# -------------------------------------------------------------------------------------- #
+# --- Build linear model (avg. coverage as response variable and pairwise distance, 
+# --- indels, exon length, GC\% as the predictors.
+# -------------------------------------------------------------------------------------- #
+
+# fac_6
+
+# -------------------------------------------------------------------------------------- #
+# --- George ABySS methods (not itemized yet)
+# -------------------------------------------------------------------------------------- #
+
+# -------------------------------------------------------------------------------------- #
+# --- SNP calling methods (not itemized yet)
+# -------------------------------------------------------------------------------------- #
+
+
 

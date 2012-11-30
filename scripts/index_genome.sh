@@ -13,15 +13,15 @@ fi
 
 # Index with BWA. 
 # Output is *.fa.amb *.fa.ann *.fa.bwt *.fa.pac *.fa.sa
-echo "--$BWA/bwa index -a bwtsw $1"
+$BWA/bwa index -a bwtsw $1
 
 # Index with samtools. 
 # Output is *.fa.fai
-echo "--$SAMTOOLS/samtools faidx $1"
+$SAMTOOLS/samtools faidx $1
 
 # Rename index files to remove ".fa"
 for file in $1.*; do
-	echo '---cp $file $(echo $file | sed "s/\.fa//")'
+	cp $file $(echo $file | sed "s/\.fa//")
 done
 
 exit;
