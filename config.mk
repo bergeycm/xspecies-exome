@@ -9,7 +9,7 @@
 # -------------------------------------------------------------------------------------- #
 
 # Individual ID (used to name files)
-IND_ID=test_rhesus
+IND_ID=test_monkey
 
 # Paths to input reads files
 # Must be in FASTQ format
@@ -19,10 +19,10 @@ READ2=./data/2012-11-28/macIll100.read2.fastq
 # Paths to genomes files
 # Must be in FASTA format
 HUMAN_GENOME_FA=./genomes/hg19/hg19.fa
-2ND_GENOME_FA=./genomes/rheMac2/rheMac2.fa
+SECOND_GENOME_FA=./genomes/rheMac2/rheMac2.fa
 
 # Common name of secondary genome (used to name files)
-2ND_GENOME_NAME=rhesus
+SECOND_GENOME_NAME=rhesus
 
 # Path to BED file of exome capture kit targets (relative to human genome)
 #Should merge this two, before pipeline starts:

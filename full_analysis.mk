@@ -6,35 +6,38 @@
 # Get user editable variables
 include config.mk
 
-SHELL = /bin/bash
+$(warning ${IND_ID})
 
 HUMAN_GENOME_DIR=$(dir ${HUMAN_GENOME_FA})
-2ND_GENOME_DIR=$(dir ${2ND_GENOME_FA})
+SECOND_GENOME_DIR=$(dir ${SECOND_GENOME_FA})
 
-HUMAN_GENOME_CODE=
-2ND_GENOME_CODE=
+# Output files of BWA index. None of these variables are exported since they begin with "_"
+_BWA_INDEX_ENDINGS = .amb .ann .bwt .pac .sa
+_PROTO_HUMAN_BWA_INDEX = $(addprefix ${HUMAN_GENOME_FA}, ${BWA_INDEX_ENDINGS})
+_HUMAN_BWA_INDEX = $(subst .fa,,${PROTO_HUMAN_BWA_INDEX})
+_PROTO_SECOND_BWA_INDEX = $(addprefix ${SECOND_GENOME_FA}, ${BWA_INDEX_ENDINGS})
+_SECOND_BWA_INDEX = $(subst .fa,,${PROTO_SECOND_BWA_INDEX})
 
-# Output files of BWA index
-BWA_INDEX_ENDINGS = .amb .ann .bwt .pac .sa
-PROTO_HUMAN_BWA_INDEX = $(addprefix ${HUMAN_GENOME_FA}, ${BWA_INDEX_ENDINGS})
-HUMAN_BWA_INDEX = $(subst .fa,,${PROTO_HUMAN_BWA_INDEX})
-PROTO_2ND_BWA_INDEX = $(addprefix ${2ND_GENOME_FA}, ${BWA_INDEX_ENDINGS})
-2ND_BWA_INDEX = $(subst .fa,,${PROTO_2ND_BWA_INDEX})
-
-index_genome : ${HUMAN_GENOME_FA}i ${HUMAN_BWA_INDEX} ${2ND_GENOME_FA}i ${2ND_BWA_INDEX}
+# Steps. Can be called one-by-one with something like, make index_genome
+index_genome : ${HUMAN_GENOME_FA}i ${_HUMAN_BWA_INDEX} ${SECOND_GENOME_FA}i ${_SECOND_BWA_INDEX}
 merge_beds : ${TARGETS}_MERGED ${CCDS}_MERGED
 liftover_beds : ${TARGETS} ${CCDS} ${TARGETS}_2nd_liftover.bed ${CCDS}_2nd_liftover.bed ${TARGETS}_2nd_liftover.unmapped.bed ${CCDS}_2nd_liftover.unmapped.bed results/liftOver_output.txt ${TARGETS}_2nd_liftover.bed_MERGED ${CCDS}_2nd_liftover.bed_MERGED 
-align : results/read*.bwa.*.sai
-sampe : results/bwa.*.sam
-sam2bam : results/bwa.*.sam.bam
-sort_and_index_bam : results/bwa.*.sam.bam.sorted.bam
-flagstat_idxstats : results/flagstat_and_idxstats_output.txt
+align : results/${IND_ID}.read1.bwa.human.sai results/${IND_ID}.read1.bwa.${SECOND_GENOME_NAME}.sai
+sampe : results/${IND_ID}.bwa.human.sam results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.sam
+sam2bam : results/${IND_ID}.bwa.human.sam.bam results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.sam.bam
+sort_and_index_bam : results/${IND_ID}.bwa.human.sam.bam.sorted.bam results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.sam.bam.sorted.bam
+get_alignment_stats : reports/${IND_ID}.bwa.human.aln_stats.txt reports/${IND_ID}.bwa.${SECOND_GENOME_NAME}.aln_stats.txt
 
-all : ${HUMAN_GENOME_FA}i ${HUMAN_BWA_INDEX} ${2ND_GENOME_FA}i ${2ND_BWA_INDEX} ${TARGETS}_MERGED ${CCDS}_MERGED ${TARGETS}_2nd_liftover.bed ${CCDS}_2nd_liftover.bed ${TARGETS}_2nd_liftover.unmapped.bed ${CCDS}_2nd_liftover.unmapped.bed results/liftOver_output.txt ${TARGETS}_2nd_liftover.bed_MERGED ${CCDS}_2nd_liftover.bed_MERGED results/read*.bwa.*.sai results/bwa.*.sam results/bwa.*.sam.bam results/bwa.*.sam.bam.sorted.bam results/flagstat_and_idxstats_output.txt
+# Group steps together
+preliminary_steps : index_genome merge_beds liftover_beds
+alignment_steps : align sampe sam2bam sort_and_index_bam get_alignment_stats
 
+all : preliminary_steps alignment_steps
 
 # Hack to be able to export Make variables to child scripts
-MAKE_ENV := $(shell echo '$(.VARIABLES)' | awk -v RS=' ' '/^[a-zA-Z0-9]+$$/')
+# Don't export variables from make that begin with non-alphanumeric character
+# After that, underscores are OK
+MAKE_ENV := $(shell echo '$(.VARIABLES)' | awk -v RS=' ' '/^[a-zA-Z0-9][a-zA-Z0-9_]+$$/')
 SHELL_EXPORT := $(foreach v,$(MAKE_ENV),$(v)='$($(v))')
 
 # ====================================================================================== #
@@ -52,19 +55,19 @@ ${HUMAN_GENOME_FA}i : ${HUMAN_GENOME_FA} ${BWA}/* ${SAMTOOLS}/* #scripts/index_g
 	@echo "# === Indexing human genome =================================================== #";
 	${SHELL_EXPORT} ./scripts/index_genome.sh ${HUMAN_GENOME_FA};
 	@sleep 2
-	@touch ${HUMAN_GENOME_FA}i ${HUMAN_BWA_INDEX}
-${2ND_GENOME_FA}i : ${2ND_GENOME_FA} ${BWA}/* ${SAMTOOLS}/* #scripts/index_genome.sh
+	@touch ${HUMAN_GENOME_FA}i ${_HUMAN_BWA_INDEX}
+${SECOND_GENOME_FA}i : ${SECOND_GENOME_FA} ${BWA}/* ${SAMTOOLS}/* #scripts/index_genome.sh
 	@echo "# === Indexing secondary genome =============================================== #";
-	${SHELL_EXPORT} ./scripts/index_genome.sh ${2ND_GENOME_FA};
+	${SHELL_EXPORT} ./scripts/index_genome.sh ${SECOND_GENOME_FA};
 	@sleep 2
-	@touch ${2ND_GENOME_FA}i ${2ND_BWA_INDEX}
+	@touch ${SECOND_GENOME_FA}i ${_SECOND_BWA_INDEX}
 
 # The output files of bwa depend on the output of samtools.
 # A hack to deal with the problem make has with multiple targets dependent on one rule
 # See for details:
 # http://www.cmcrossroads.com/ask-mr-make/12908-rules-with-multiple-outputs-in-gnu-make
-${HUMAN_BWA_INDEX} : ${HUMAN_GENOME_FA}i
-${2ND_BWA_INDEX} : ${2ND_GENOME_FA}i
+${_HUMAN_BWA_INDEX} : ${HUMAN_GENOME_FA}i
+${_SECOND_BWA_INDEX} : ${SECOND_GENOME_FA}i
 	
 # -------------------------------------------------------------------------------------- #
 # --- Merge overlapping intervals in BED files of targets and CCDS
@@ -161,58 +164,66 @@ ${CCDS}_2nd_liftover.bed_MERGED : ${BEDTOOLS}/* ${CCDS}_2nd_liftover.bed #script
 # -------------------------------------------------------------------------------------- #
 
 # Alignment output (*.sai) depends on bwa, the reads FASTAs, the genome (index), and align.sh
-results/read1.bwa.human.sai : ${BWA}/* ${READS1} ${READS2} ${HUMAN_GENOME_FA}i #scripts/align.sh
+# Using the first read as a stand in for the both
+results/${IND_ID}.read1.bwa.human.sai : ${BWA}/* ${READS1} ${READS2} ${HUMAN_GENOME_FA}i #scripts/align.sh
 	@echo "# === Aligning reads to human genome ========================================== #";
 	${SHELL_EXPORT} ./scripts/align.sh ${HUMAN_GENOME_FA} human;
-results/read1.bwa.${2ND_GENOME_NAME}.sai : ${BWA}/* ${READS1} ${READS2} ${2ND_GENOME_FA}i #scripts/align.sh
-	@echo "# === Aligning reads to human genome ========================================== #";
-	${SHELL_EXPORT} ./scripts/align.sh ${2ND_GENOME_FA} ${2ND_GENOME_NAME};
+results/${IND_ID}.read1.bwa.${SECOND_GENOME_NAME}.sai : ${BWA}/* ${READS1} ${READS2} ${SECOND_GENOME_FA}i #scripts/align.sh
+	@echo "# === Aligning reads to other genome ========================================== #";
+	${SHELL_EXPORT} ./scripts/align.sh ${SECOND_GENOME_FA} ${SECOND_GENOME_NAME};
+
+# Read 2 depends on read 1
+results/${IND_ID}.read2.bwa.human.sai : results/${IND_ID}.read1.bwa.human.sai
+results/${IND_ID}.read2.bwa.${SECOND_GENOME_NAME}.sai : results/${IND_ID}.read1.bwa.${SECOND_GENOME_NAME}.sai
 
 # -------------------------------------------------------------------------------------- #
 # --- Run sampe to generate SAM files
 # -------------------------------------------------------------------------------------- #
 
 # sampe output (*.sam) depends on *.sai files and sampe.sh
-results/bwa.human.sam : results/read*.bwa.human.sai #scripts/sampe.sh
+# Using the first read as a stand in for the both
+results/${IND_ID}.bwa.human.sam : results/${IND_ID}.read1.bwa.human.sai #scripts/sampe.sh
 	@echo "# === Combining reads to make SAM file for human genome ======================= #";
 	${SHELL_EXPORT} ./scripts/sampe.sh ${HUMAN_GENOME_FA} human;
-results/bwa.${2ND_GENOME_NAME}.sam : results/read*.bwa.${2ND_GENOME_NAME}.sai #scripts/sampe.sh
+results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.sam : results/${IND_ID}.read1.bwa.${SECOND_GENOME_NAME}.sai #scripts/sampe.sh
 	@echo "# === Combining reads to make SAM file for other genome ======================= #";
-	${SHELL_EXPORT} ./scripts/sampe.sh ${2ND_GENOME_FA} ${2ND_GENOME_NAME};
+	${SHELL_EXPORT} ./scripts/sampe.sh ${SECOND_GENOME_FA} ${SECOND_GENOME_NAME};
 
 # -------------------------------------------------------------------------------------- #
 # --- Convert SAM file to BAM file
 # -------------------------------------------------------------------------------------- #
 
 # BAM file depends on SAM file, samtools, genome .fai index, and scripts/sam2bam.sh
-results/bwa.human.sam.bam : results/bwa.human.sam ${SAMTOOLS}/* ${HUMAN_GENOME_FA}i #scripts/sam2bam.sh
+results/${IND_ID}.bwa.human.sam.bam : results/${IND_ID}.bwa.human.sam ${SAMTOOLS}/* ${HUMAN_GENOME_FA}i #scripts/sam2bam.sh
 	@echo "# === Converting SAM file to BAM file for human genome ======================== #";
 	${SHELL_EXPORT} ./scripts/sam2bam.sh ${HUMAN_GENOME_FA}i human;
-results/bwa.${2ND_GENOME_NAME}.sam.bam : results/bwa.${2ND_GENOME_NAME}.sam ${SAMTOOLS}/* ${2ND_GENOME_FA}i #scripts/sam2bam.sh
+results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.sam.bam : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.sam ${SAMTOOLS}/* ${SECOND_GENOME_FA}i #scripts/sam2bam.sh
 	@echo "# === Converting SAM file to BAM file for other genome ======================== #";
-	${SHELL_EXPORT} ./scripts/sam2bam.sh ${2ND_GENOME_FA}i ${2ND_GENOME_NAME};
+	${SHELL_EXPORT} ./scripts/sam2bam.sh ${SECOND_GENOME_FA}i ${SECOND_GENOME_NAME};
 
 # -------------------------------------------------------------------------------------- #
 # --- Sort and index BAM
 # -------------------------------------------------------------------------------------- #
 
 # Sorted BAM file depends on unsorted BAM file and scripts/sort_and_index_bam.sh
-results/bwa.human.sam.bam.sorted.bam : results/bwa.human.sam.bam #scripts/sort_and_index_bam.sh
+results/${IND_ID}.bwa.human.sam.bam.sorted.bam : results/${IND_ID}.bwa.human.sam.bam #scripts/sort_and_index_bam.sh
 	@echo "# === Sorting and Indexing BAM file for human genome ========================== #";
 	${SHELL_EXPORT} ./scripts/sort_and_index_bam.sh human;
-results/bwa.${2ND_GENOME_NAME}.sam.bam.sorted.bam : results/bwa.${2ND_GENOME_NAME}.sam.bam #scripts/sort_and_index_bam.sh
+results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.sam.bam.sorted.bam : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.sam.bam #scripts/sort_and_index_bam.sh
 	@echo "# === Sorting and Indexing BAM file for other genome ========================== #";
-	${SHELL_EXPORT} ./scripts/sort_and_index_bam.sh ${2ND_GENOME_NAME};
+	${SHELL_EXPORT} ./scripts/sort_and_index_bam.sh ${SECOND_GENOME_NAME};
 
 # -------------------------------------------------------------------------------------- #
 # --- Analyze alignment output with flagstat and idxstats
 # -------------------------------------------------------------------------------------- #
 
-results/flagstat_and_idxstats_output.txt : results/bwa.human.sam.bam.sorted.bam results/bwa.${2ND_GENOME_NAME}.sam.bam.sorted.bam #scripts/flagstat_idxstats.sh
+# Align stats report depends on the sorted BAM and scripts/get_alignment_stats.sh
+reports/${IND_ID}.bwa.human.aln_stats.txt : results/${IND_ID}.bwa.human.sam.bam.sorted.bam #scripts/get_alignment_stats.sh
 	@echo "# === Analyzing alignment output for human genome ============================= #";
-	${SHELL_EXPORT} ./scripts/flagstat_idxstats.sh human;
+	${SHELL_EXPORT} ./scripts/get_alignment_stats.sh human;
+reports/${IND_ID}.bwa.${SECOND_GENOME_NAME}.aln_stats.txt : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.sam.bam.sorted.bam #scripts/get_alignment_stats.sh
 	@echo "# === Analyzing alignment output for other genome ============================= #";
-	${SHELL_EXPORT} ./scripts/flagstat_idxstats.sh ${2ND_GENOME_NAME};
+	${SHELL_EXPORT} ./scripts/get_alignment_stats.sh ${SECOND_GENOME_NAME};
 
 # Add ${BAMTOOLS}/bamtools stats -insert -in *.bam reports/${IND_ID}.bwa.${GENOME_CODE}.aln_stats.txt
 
