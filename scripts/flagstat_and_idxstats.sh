@@ -14,10 +14,17 @@ fi
 GENOME_CODE=$1
 
 # Run flagstat
-$SAMTOOLS/samtools flagstat results/bwa.${GENOME_CODE}.sam.bam.sorted.bam >> results/flagstat_and_idxstats_output.txt
+$SAMTOOLS/samtools flagstat \
+	results/${IND_ID}.bwa.${GENOME_CODE}.sam.bam.sorted.bam \
+	> reports/${IND_ID}.bwa.${GENOME_CODE}.aln_stats.txt
 
 # Run idxstats
-$SAMTOOLS/samtools idxstats results/bwa.${GENOME_CODE}.sam.bam.sorted.bam >> results/flagstat_and_idxstats_output.txt
+$SAMTOOLS/samtools idxstats \
+	results/bwa.${GENOME_CODE}.sam.bam.sorted.bam \
+	>> reports/${IND_ID}.bwa.${GENOME_CODE}.aln_stats.txt
+
+# Run bamtools stats
+
 
 echo results/flagstat_and_idxstats_output.txt;
 

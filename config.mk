@@ -8,6 +8,9 @@
 # --- Paths to input files
 # -------------------------------------------------------------------------------------- #
 
+# Individual ID (used to name files)
+IND_ID=test_rhesus
+
 # Paths to input reads files
 # Must be in FASTQ format
 READ1=./data/2012-11-28/macIll100.read1.fastq
@@ -17,6 +20,9 @@ READ2=./data/2012-11-28/macIll100.read2.fastq
 # Must be in FASTA format
 HUMAN_GENOME_FA=./genomes/hg19/hg19.fa
 2ND_GENOME_FA=./genomes/rheMac2/rheMac2.fa
+
+# Common name of secondary genome (used to name files)
+2ND_GENOME_NAME=rhesus
 
 # Path to BED file of exome capture kit targets (relative to human genome)
 #Should merge this two, before pipeline starts:
@@ -40,4 +46,8 @@ SAMTOOLS=/home/cmb433/exome_macaque/bin/samtools
 BEDTOOLS=/home/cmb433/exome_macaque/bin/BEDTools-Version-2.13.4/bin
 LIFTOVER=/home/cmb433/exome_macaque/bin/liftover/
 
+# -------------------------------------------------------------------------------------- #
+# --- Parameters for external programs
+# -------------------------------------------------------------------------------------- #
 
+BWA_ALN_PARAM=

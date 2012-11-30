@@ -16,12 +16,15 @@ GENOME_CODE=$1
 # Sort BAM
 # Output file is *.sorted.bam
 
-$SAMTOOLS/samtools sort results/bwa.${GENOME_CODE}.sam.bam results/bwa.${GENOME_CODE}.sam.bam.sorted
+$SAMTOOLS/samtools sort \
+	results/${IND_ID}.bwa.${GENOME_CODE}.sam.bam \
+	results/${IND_ID}.bwa.${GENOME_CODE}.sam.bam.sorted
 
 # Index BAM
 
-$SAMTOOLS/samtools index results/bwa.${GENOME_CODE}.sam.bam.sorted.bam
+$SAMTOOLS/samtools index \
+	results/${IND_ID}.bwa.${GENOME_CODE}.sam.bam.sorted.bam
 
-echo results/bwa.${GENOME_CODE}.sam.bam.sorted.bam;
+echo results/${IND_ID}.bwa.${GENOME_CODE}.sam.bam.sorted.bam;
 
 exit;
