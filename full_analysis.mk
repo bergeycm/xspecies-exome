@@ -214,7 +214,7 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.sam.bam.sorted.bam : results/${IND_I
 	${SHELL_EXPORT} ./scripts/sort_and_index_bam.sh ${SECOND_GENOME_NAME};
 
 # -------------------------------------------------------------------------------------- #
-# --- Analyze alignment output with flagstat and idxstats
+# --- Analyze alignment output with flagstat, idxstats, and stats
 # -------------------------------------------------------------------------------------- #
 
 # Align stats report depends on the sorted BAM and scripts/get_alignment_stats.sh
