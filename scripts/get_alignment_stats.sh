@@ -34,8 +34,9 @@ echo "" >> $REPORT
 
 # Run bamtools stats
 echo "bamtools stats:" >> $REPORT
-echo "" >> $REPORT
-
-echo $REPORT;
+$BAMTOOLS/bamtools stats \
+	-insert \
+	-in results/${IND_ID}.bwa.${GENOME_CODE}.sam.bam.sorted.bam \
+	>> $REPORT
 
 exit;
