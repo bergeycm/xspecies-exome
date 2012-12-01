@@ -15,18 +15,16 @@ fi
 GENOME_PATH=$(echo $1 | sed 's/.[^.]*$//g')
 GENOME_CODE=$2
 
-#### ALIGN PARAMETERS!!!!!
-
 $BWA/bwa aln \
 	$BWA_ALN_PARAM \
 	$GENOME_PATH \
-	$READ1 > results/${IND_ID}.read1.bwa.${GENOME_CODE}.sai
+	$READ1.filtered.fastq > results/${IND_ID}.read1.bwa.${GENOME_CODE}.sai
 echo results/${IND_ID}.read1.bwa.${GENOME_CODE}.sai;
 
 $BWA/bwa aln \
 	$BWA_ALN_PARAM \
 	$GENOME_PATH \
-	$READ2 > results/${IND_ID}.read2.bwa.${GENOME_CODE}.sai
+	$READ2.filtered.fastq > results/${IND_ID}.read2.bwa.${GENOME_CODE}.sai
 echo results/${IND_ID}.read2.bwa.${GENOME_CODE}.sai;
 
 exit;

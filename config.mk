@@ -42,6 +42,7 @@ CHAINFILE=/home/cmb433/exome_macaque/bin/liftover/hg19ToRheMac2.over.chain
 # -------------------------------------------------------------------------------------- #
 
 FASTQC=/home/cmb433/exome_macaque/bin/FastQC
+FASTX=/home/cmb433/exome_macaque/bin/fastx
 BWA=/home/cmb433/exome_macaque/bin/bwa-0.6.1
 SAMTOOLS=/home/cmb433/exome_macaque/bin/samtools
 BEDTOOLS=/home/cmb433/exome_macaque/bin/BEDTools-Version-2.13.4/bin
@@ -52,3 +53,4 @@ LIFTOVER=/home/cmb433/exome_macaque/bin/liftover
 # -------------------------------------------------------------------------------------- #
 
 BWA_ALN_PARAM=-e 63 -i 15 -L -l 31 -t 8 -I 
+FASTX_PARAM=-q 13 -p 80 -v 
