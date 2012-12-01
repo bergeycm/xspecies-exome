@@ -17,24 +17,31 @@ _PROTO_SECOND_BWA_INDEX = $(addprefix ${SECOND_GENOME_FA}, ${BWA_INDEX_ENDINGS})
 _SECOND_BWA_INDEX = $(subst .fa,,${PROTO_SECOND_BWA_INDEX})
 
 # Steps. Can be called one-by-one with something like, make index_genome
+# --- preliminary_steps
 index_genome : ${HUMAN_GENOME_FA}i ${_HUMAN_BWA_INDEX} ${SECOND_GENOME_FA}i ${_SECOND_BWA_INDEX}
 merge_beds : ${TARGETS}_MERGED ${CCDS}_MERGED
 liftover_beds : ${TARGETS} ${CCDS} ${TARGETS}_2nd_liftover.bed ${CCDS}_2nd_liftover.bed ${TARGETS}_2nd_liftover.unmapped.bed ${CCDS}_2nd_liftover.unmapped.bed results/liftOver_output.txt ${TARGETS}_2nd_liftover.bed_MERGED ${CCDS}_2nd_liftover.bed_MERGED 
+# --- pre_aln_filtering_steps:
 fastqc_raw : reports/${IND_ID}.read1.raw.stats.zip reports/${IND_ID}.read2.raw.stats.zip
 filter_reads : ${READ1}.filtered.fastq ${READ2}.filtered.fastq
 fastqc_filtered : reports/${IND_ID}.read1.filtered.stats.zip reports/${IND_ID}.read2.filtered.stats.zip
+# --- alignment_steps
 align : results/${IND_ID}.read1.bwa.human.sai results/${IND_ID}.read1.bwa.${SECOND_GENOME_NAME}.sai
 sampe : results/${IND_ID}.bwa.human.sam results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.sam
 sam2bam : results/${IND_ID}.bwa.human.sam.bam results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.sam.bam
 sort_and_index_bam : results/${IND_ID}.bwa.human.sam.bam.sorted.bam results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.sam.bam.sorted.bam
 get_alignment_stats : reports/${IND_ID}.bwa.human.aln_stats.txt reports/${IND_ID}.bwa.${SECOND_GENOME_NAME}.aln_stats.txt
+# --- post_alignment_filtering_steps
+fix_mate_pairs : results/${IND_ID}.bwa.human.fixed.bam results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.bam
+filter_unmapped : results/${IND_ID}.bwa.human.fixed.filtered.bam results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.filtered.bam
 
 # Group steps together
 preliminary_steps : index_genome merge_beds liftover_beds
 pre_aln_filtering_steps : fastqc_raw filter_reads fastqc_filtered
 alignment_steps : align sampe sam2bam sort_and_index_bam get_alignment_stats
+post_alignment_filtering_steps : fix_mate_pairs filter_unmapped
 
-all : preliminary_steps pre_aln_filtering_steps alignment_steps
+all : preliminary_steps pre_aln_filtering_steps alignment_steps post_alignment_filtering_steps
 
 # Hack to be able to export Make variables to child scripts
 # Don't export variables from make that begin with non-alphanumeric character
@@ -264,19 +271,13 @@ reports/${IND_ID}.bwa.${SECOND_GENOME_NAME}.aln_stats.txt : results/${IND_ID}.bw
 # --- Fix mate pairs info
 # -------------------------------------------------------------------------------------- #
 
-# Make temp folder
-
-# Then Picard:
-
-#java -Djava.io.tmpdir=${TMPDIR} \
-#	-jar ${PICARD}/FixMateInformation.jar \
-#	INPUT=*sorted.bam \
-#	OUTPUT=*.fixed.bam \
-#	SO=coordinate \
-#	VALIDATION_STRINGENCY=LENIENT \
-#	CREATE_INDEX=true
-
-# Delete temp folder
+# BAM with fixed mate pair info depends on output BAM from sort_and_index.sh, Picard, and scripts/fix_mate_pairs.sh
+results/${IND_ID}.bwa.human.fixed.bam : results/${IND_ID}.bwa.human.sam.bam.sorted.bam ${PICARD}/* # scripts/fix_mate_pairs.sh
+	@echo "# === Fixing mate pair info for human genome alignment ======================== #";
+	${SHELL_EXPORT} ./scripts/fix_mate_pairs.sh human;
+results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.bam : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.sam.bam.sorted.bam ${PICARD}/* # scripts/fix_mate_pairs.sh
+	@echo "# === Fixing mate pair info for other genome alignment ======================== #";
+	${SHELL_EXPORT} ./scripts/fix_mate_pairs.sh ${SECOND_GENOME_NAME};
 
 # Run flagstat, idxstats, bedtools stats. reports/${IND_ID}.bwa.${GENOME_CODE}.aln_stats.pairsfix.txt
 
@@ -284,12 +285,16 @@ reports/${IND_ID}.bwa.${SECOND_GENOME_NAME}.aln_stats.txt : results/${IND_ID}.bw
 # --- Filtering for mapping, pairing, and proper paired
 # -------------------------------------------------------------------------------------- #
 
-#${BAMTOOLS}/bamtools filter \
-#	-isMapped true \
-#	-isPaired true \
-#	-isProperPair true \
 #	-in *.fixed.bam \
 #	-out *.fixed.filtered.bam
+
+# Filtered BAM depends on output BAM from fix_mate_pairs.sh, BAMtools, and scripts/filter_mapped_reads.sh
+results/${IND_ID}.bwa.human.fixed.filtered.bam : results/${IND_ID}.bwa.human.fixed.bam ${BEDTOOLS}/* # scripts/filter_mapped_reads.sh
+	@echo "# === Filtering reads mapped to human genome ================================== #";
+	${SHELL_EXPORT} ./scripts/filter_mapped_reads.sh human;
+results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.filtered.bam : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.bam ${BEDTOOLS}/* # scripts/filter_mapped_reads.sh
+	@echo "# === Filtering reads mapped to other genome ================================== #";
+	${SHELL_EXPORT} ./scripts/filter_mapped_reads.sh ${SECOND_GENOME_NAME};
 
 # Run flagstat, idxstats, bedtools stats. reports/${IND_ID}.bwa.${GENOME_CODE}.aln_stats.pairsfix.fltr.txt
 
