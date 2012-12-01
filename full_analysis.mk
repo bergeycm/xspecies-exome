@@ -34,12 +34,13 @@ get_alignment_stats : reports/${IND_ID}.bwa.human.aln_stats.txt reports/${IND_ID
 # --- post_alignment_filtering_steps
 fix_mate_pairs : results/${IND_ID}.bwa.human.fixed.bam results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.bam
 filter_unmapped : results/${IND_ID}.bwa.human.fixed.filtered.bam results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.filtered.bam
+remove_dups : results/${IND_ID}.bwa.human.fixed.filtered.nodup.bam results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.filtered.nodup.bam
 
 # Group steps together
 preliminary_steps : index_genome merge_beds liftover_beds
 pre_aln_filtering_steps : fastqc_raw filter_reads fastqc_filtered
 alignment_steps : align sampe sam2bam sort_and_index_bam get_alignment_stats
-post_alignment_filtering_steps : fix_mate_pairs filter_unmapped
+post_alignment_filtering_steps : fix_mate_pairs filter_unmapped remove_dups 
 
 all : preliminary_steps pre_aln_filtering_steps alignment_steps post_alignment_filtering_steps
 
@@ -259,8 +260,6 @@ reports/${IND_ID}.bwa.${SECOND_GENOME_NAME}.aln_stats.txt : results/${IND_ID}.bw
 	@echo "# === Analyzing alignment output for other genome ============================= #";
 	${SHELL_EXPORT} ./scripts/get_alignment_stats.sh ${SECOND_GENOME_NAME};
 
-# Add ${BAMTOOLS}/bamtools stats -insert -in *.bam reports/${IND_ID}.bwa.${GENOME_CODE}.aln_stats.txt
-
 # ====================================================================================== #
 # -------------------------------------------------------------------------------------- #
 # --- Post-alignment filtering steps
@@ -302,20 +301,15 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.filtered.bam : results/${IND_I
 # --- Remove duplicates
 # -------------------------------------------------------------------------------------- #
 
-# Make temp folder
-
-# Then Picard:
-#java -Djava.io.tmpdir=${TMPDIR}
-#	-jar ${PICARD}/MarkDuplicates.jar \
-#	INPUT=*.fixed.filtered.bam \
-#	OUTPUT=*.fixed.filtered.nodup.bam \
-#	M=reports/duplicate_report.txt \
-#	VALIDATION_STRINGENCY=SILENT \
-#	REMOVE_DUPLICATES=true
+# BAM sans dups depends on output BAM from filter_mapped_reads.sh, Picard, and scripts/remove_dups.sh
+results/${IND_ID}.bwa.human.fixed.filtered.nodup.bam : results/${IND_ID}.bwa.human.fixed.filtered.bam ${PICARD}/* # scripts/remove_dups.sh
+	@echo "# === Removing duplicate reads mapped to human genome ================================== #";
+	${SHELL_EXPORT} ./scripts/remove_dups.sh human;
+results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.filtered.nodup.bam : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.filtered.bam ${PICARD}/* # scripts/remove_dups.sh
+	@echo "# === Removing duplicate reads mapped to other genome ================================== #";
+	${SHELL_EXPORT} ./scripts/remove_dups.sh ${SECOND_GENOME_NAME};
 
 # Run flagstat, idxstats, bedtools stats. reports/${IND_ID}.bwa.${GENOME_CODE}.aln_stats.pairsfix.fltr.nodups.txt
-
-# Delete temp folder
 
 # -------------------------------------------------------------------------------------- #
 # --- Add readgroups
