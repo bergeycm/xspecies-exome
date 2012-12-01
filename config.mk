@@ -41,13 +41,14 @@ CHAINFILE=/home/cmb433/exome_macaque/bin/liftover/hg19ToRheMac2.over.chain
 # --- Paths to external programs
 # -------------------------------------------------------------------------------------- #
 
+FASTQC=/home/cmb433/exome_macaque/bin/FastQC
 BWA=/home/cmb433/exome_macaque/bin/bwa-0.6.1
 SAMTOOLS=/home/cmb433/exome_macaque/bin/samtools
 BEDTOOLS=/home/cmb433/exome_macaque/bin/BEDTools-Version-2.13.4/bin
-LIFTOVER=/home/cmb433/exome_macaque/bin/liftover/
+LIFTOVER=/home/cmb433/exome_macaque/bin/liftover
 
 # -------------------------------------------------------------------------------------- #
 # --- Parameters for external programs
 # -------------------------------------------------------------------------------------- #
 
-BWA_ALN_PARAM=
+BWA_ALN_PARAM=-e 63 -i 15 -L -l 31 -t 8 -I 

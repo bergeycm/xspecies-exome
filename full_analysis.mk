@@ -22,6 +22,7 @@ _SECOND_BWA_INDEX = $(subst .fa,,${PROTO_SECOND_BWA_INDEX})
 index_genome : ${HUMAN_GENOME_FA}i ${_HUMAN_BWA_INDEX} ${SECOND_GENOME_FA}i ${_SECOND_BWA_INDEX}
 merge_beds : ${TARGETS}_MERGED ${CCDS}_MERGED
 liftover_beds : ${TARGETS} ${CCDS} ${TARGETS}_2nd_liftover.bed ${CCDS}_2nd_liftover.bed ${TARGETS}_2nd_liftover.unmapped.bed ${CCDS}_2nd_liftover.unmapped.bed results/liftOver_output.txt ${TARGETS}_2nd_liftover.bed_MERGED ${CCDS}_2nd_liftover.bed_MERGED 
+fastqc_raw : reports/${IND_ID}.read1.raw.stats.zip reports/${IND_ID}.read2.raw.stats.zip
 align : results/${IND_ID}.read1.bwa.human.sai results/${IND_ID}.read1.bwa.${SECOND_GENOME_NAME}.sai
 sampe : results/${IND_ID}.bwa.human.sam results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.sam
 sam2bam : results/${IND_ID}.bwa.human.sam.bam results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.sam.bam
@@ -30,9 +31,10 @@ get_alignment_stats : reports/${IND_ID}.bwa.human.aln_stats.txt reports/${IND_ID
 
 # Group steps together
 preliminary_steps : index_genome merge_beds liftover_beds
+prefiltering_steps : fastqc_raw
 alignment_steps : align sampe sam2bam sort_and_index_bam get_alignment_stats
 
-all : preliminary_steps alignment_steps
+all : preliminary_steps prefiltering_steps alignment_steps
 
 # Hack to be able to export Make variables to child scripts
 # Don't export variables from make that begin with non-alphanumeric character
@@ -133,8 +135,14 @@ ${CCDS}_2nd_liftover.bed_MERGED : ${BEDTOOLS}/* ${CCDS}_2nd_liftover.bed #script
 # --- Analyze reads with FastQC. Total sequence bp, Maximum possible sequence depth
 # -------------------------------------------------------------------------------------- #
 
-# bep_1_1
-
+# FastQC reports depend on read files, FastQC, and run_fastqc.sh
+reports/${IND_ID}.read1.raw.stats.zip : ${READ1} ${FASTQC}/* #scripts/run_fastqc.sh
+	@echo "# === Analyzing quality of reads (1st pair) before filtering ================== #";
+	${SHELL_EXPORT} ./scripts/run_fastqc.sh ${READ1} ${IND_ID}.read1.raw.stats;
+reports/${IND_ID}.read2.raw.stats.zip : ${READ2} ${FASTQC}/* #scripts/run_fastqc.sh
+	@echo "# === Analyzing quality of reads (2nd pair) before filtering ================== #";
+	${SHELL_EXPORT} ./scripts/run_fastqc.sh ${READ2} ${IND_ID}.read2.raw.stats;
+	
 # -------------------------------------------------------------------------------------- #
 # --- Filter and trim reads
 # -------------------------------------------------------------------------------------- #
@@ -147,11 +155,14 @@ ${CCDS}_2nd_liftover.bed_MERGED : ${BEDTOOLS}/* ${CCDS}_2nd_liftover.bed #script
 
 # bep_1_3
 
+# Call fastqc again
+
 # -------------------------------------------------------------------------------------- #
 # --- [Optional] randomly subsample reads, if say you want to compare two different runs
 # -------------------------------------------------------------------------------------- #
 
 # bep_3
+# Call fastqc again
 
 # ====================================================================================== #
 # -------------------------------------------------------------------------------------- #
