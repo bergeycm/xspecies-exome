@@ -154,7 +154,7 @@ reports/${IND_ID}.read2.raw.stats.zip : ${READ2} ${FASTQC}/* #scripts/run_fastqc
 	${SHELL_EXPORT} ./scripts/run_fastqc.sh ${READ2} ${IND_ID}.read2.raw.stats;
 	
 # -------------------------------------------------------------------------------------- #
-# --- Filter and trim reads
+# --- Filter reads
 # -------------------------------------------------------------------------------------- #
 
 # Filtered reads FASTQs depends on read files, FastX, and filter_reads.sh
@@ -337,9 +337,6 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.bam : results/${IND_ID}.bwa.$
 	@echo "# === Filtering low quality reads mapped to other genome ====================== #";
 	${SHELL_EXPORT} ./scripts/filter_mapped_reads_quality.sh ${SECOND_GENOME_NAME};
 	${SHELL_EXPORT} ./scripts/index_bam.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.bam;
-
-
-# Index the bam
 
 # Run flagstat, idxstats, bedtools stats. reports/${IND_ID}.bwa.${GENOME_CODE}.aln_stats.pairsfix.fltr.nodups.highqual.txt
 
