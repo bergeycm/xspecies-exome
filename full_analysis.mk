@@ -35,12 +35,14 @@ get_alignment_stats : reports/${IND_ID}.bwa.human.aln_stats.txt reports/${IND_ID
 fix_mate_pairs : results/${IND_ID}.bwa.human.fixed.bam results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.bam
 filter_unmapped : results/${IND_ID}.bwa.human.fixed.filtered.bam results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.filtered.bam
 remove_dups : results/${IND_ID}.bwa.human.fixed.filtered.nodup.bam results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.filtered.nodup.bam
+add_read_groups : results/${IND_ID}.bwa.human.fixed.filtered.nodup.RG.bam results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.filtered.nodup.RG.bam
+filter_bad_qual : results/${IND_ID}.bwa.human.passed.bam results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.bam
 
 # Group steps together
 preliminary_steps : index_genome merge_beds liftover_beds
 pre_aln_filtering_steps : fastqc_raw filter_reads fastqc_filtered
 alignment_steps : align sampe sam2bam sort_and_index_bam get_alignment_stats
-post_alignment_filtering_steps : fix_mate_pairs filter_unmapped remove_dups 
+post_alignment_filtering_steps : fix_mate_pairs filter_unmapped remove_dups add_read_groups filter_bad_qual
 
 all : preliminary_steps pre_aln_filtering_steps alignment_steps post_alignment_filtering_steps
 
@@ -284,16 +286,13 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.bam : results/${IND_ID}.bwa.${
 # --- Filtering for mapping, pairing, and proper paired
 # -------------------------------------------------------------------------------------- #
 
-#	-in *.fixed.bam \
-#	-out *.fixed.filtered.bam
-
-# Filtered BAM depends on output BAM from fix_mate_pairs.sh, BAMtools, and scripts/filter_mapped_reads.sh
-results/${IND_ID}.bwa.human.fixed.filtered.bam : results/${IND_ID}.bwa.human.fixed.bam ${BEDTOOLS}/* # scripts/filter_mapped_reads.sh
-	@echo "# === Filtering reads mapped to human genome ================================== #";
-	${SHELL_EXPORT} ./scripts/filter_mapped_reads.sh human;
-results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.filtered.bam : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.bam ${BEDTOOLS}/* # scripts/filter_mapped_reads.sh
+# Filtered BAM depends on output BAM from fix_mate_pairs.sh, BAMtools, and scripts/filter_mapped_reads_paired.sh
+results/${IND_ID}.bwa.human.fixed.filtered.bam : results/${IND_ID}.bwa.human.fixed.bam ${BEDTOOLS}/* # scripts/filter_mapped_reads_paired.sh
+	@echo "# === Filtering unpaired reads mapped to human genome ========================= #";
+	${SHELL_EXPORT} ./scripts/filter_mapped_reads_paired.sh human;
+results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.filtered.bam : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.bam ${BEDTOOLS}/* # scripts/filter_mapped_reads_paired.sh
 	@echo "# === Filtering reads mapped to other genome ================================== #";
-	${SHELL_EXPORT} ./scripts/filter_mapped_reads.sh ${SECOND_GENOME_NAME};
+	${SHELL_EXPORT} ./scripts/filter_mapped_reads_paired.sh ${SECOND_GENOME_NAME};
 
 # Run flagstat, idxstats, bedtools stats. reports/${IND_ID}.bwa.${GENOME_CODE}.aln_stats.pairsfix.fltr.txt
 
@@ -301,7 +300,7 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.filtered.bam : results/${IND_I
 # --- Remove duplicates
 # -------------------------------------------------------------------------------------- #
 
-# BAM sans dups depends on output BAM from filter_mapped_reads.sh, Picard, and scripts/remove_dups.sh
+# BAM sans dups depends on output BAM from filter_mapped_reads_paired.sh, Picard, and scripts/remove_dups.sh
 results/${IND_ID}.bwa.human.fixed.filtered.nodup.bam : results/${IND_ID}.bwa.human.fixed.filtered.bam ${PICARD}/* # scripts/remove_dups.sh
 	@echo "# === Removing duplicate reads mapped to human genome ================================== #";
 	${SHELL_EXPORT} ./scripts/remove_dups.sh human;
@@ -312,28 +311,28 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.filtered.nodup.bam : results/$
 # Run flagstat, idxstats, bedtools stats. reports/${IND_ID}.bwa.${GENOME_CODE}.aln_stats.pairsfix.fltr.nodups.txt
 
 # -------------------------------------------------------------------------------------- #
-# --- Add readgroups
+# --- Add read groups
 # -------------------------------------------------------------------------------------- #
 
-#java -jar ${PICARD}/AddOrReplaceReadGroups.jar \
-#	INPUT=*.fixed.filtered.nodup.bam \
-#	OUTPUT=*.fixed.filtered.nodup.RG.bam \
-#	RGLB=${ID} \
-#	RGPL=Illumina \
-#	RGPU=Group1 \
-#	RGSM=Grp1
-
-# Replace original BAM with the BAM with Read Groups
-#mv *.fixed.filtered.nodup.RG.bam *.fixed.filtered.nodup.bam
+# BAM without RGs depends on output BAM from remove_dups.sh, Picard, and scripts/add_read_groups.sh
+results/${IND_ID}.bwa.human.fixed.filtered.nodup.RG.bam : results/${IND_ID}.bwa.human.fixed.filtered.nodup.bam ${PICARD}/* # scripts/add_read_groups.sh
+	@echo "# === Adding read groups for reads mapped to human genome ===================== #";
+	${SHELL_EXPORT} ./scripts/add_read_groups.sh human;
+results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.filtered.nodup.RG.bam : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.filtered.nodup.bam ${PICARD}/* # scripts/add_read_groups.sh
+	@echo "# === Adding read groups for reads mapped to other genome ===================== #";
+	${SHELL_EXPORT} ./scripts/add_read_groups.sh ${SECOND_GENOME_NAME};
 
 # -------------------------------------------------------------------------------------- #
 # --- Remove reads with low mapping quality
 # -------------------------------------------------------------------------------------- #
 
-#$bamtools filter \
-#	-mapQuality ">=60" \
-#	-in *.fixed.filtered.nodup.bam \
-#	-out *.passed.bam
+# Filtered BAM depends on output BAM from add_read_groups.sh, BAMtools, and scripts/filter_mapped_reads_quality.sh
+results/${IND_ID}.bwa.human.passed.bam : results/${IND_ID}.bwa.human.fixed.filtered.nodup.RG.bam ${BEDTOOLS}/* # scripts/filter_mapped_reads_quality.sh
+	@echo "# === Filtering low quality reads mapped to human genome ====================== #";
+	${SHELL_EXPORT} ./scripts/filter_mapped_reads_quality.sh human;
+results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.bam : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.filtered.nodup.RG.bam ${BEDTOOLS}/* # scripts/filter_mapped_reads_quality.sh
+	@echo "# === Filtering low quality reads mapped to other genome ====================== #";
+	${SHELL_EXPORT} ./scripts/filter_mapped_reads_quality.sh ${SECOND_GENOME_NAME};
 
 # Index the bam
 
