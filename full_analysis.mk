@@ -242,13 +242,15 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.sam.bam : results/${IND_ID}.bwa.${SE
 # --- Sort and index BAM
 # -------------------------------------------------------------------------------------- #
 
-# Sorted BAM file depends on unsorted BAM file and scripts/sort_and_index_bam.sh
-results/${IND_ID}.bwa.human.sam.bam.sorted.bam : results/${IND_ID}.bwa.human.sam.bam #scripts/sort_and_index_bam.sh
+# Sorted BAM file depends on unsorted BAM file, scripts/sort_bam, and scripts/index_bam.sh
+results/${IND_ID}.bwa.human.sam.bam.sorted.bam : results/${IND_ID}.bwa.human.sam.bam #scripts/sort_bam scripts/index_bam.sh
 	@echo "# === Sorting and Indexing BAM file for human genome ========================== #";
-	${SHELL_EXPORT} ./scripts/sort_and_index_bam.sh human;
-results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.sam.bam.sorted.bam : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.sam.bam #scripts/sort_and_index_bam.sh
+	${SHELL_EXPORT} ./scripts/sort_bam.sh results/${IND_ID}.bwa.human.sam.bam;
+	${SHELL_EXPORT} ./scripts/index_bam.sh results/${IND_ID}.bwa.human.sam.bam.sorted.bam;
+results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.sam.bam.sorted.bam : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.sam.bam #scripts/sort_bam scripts/index_bam.sh
 	@echo "# === Sorting and Indexing BAM file for other genome ========================== #";
-	${SHELL_EXPORT} ./scripts/sort_and_index_bam.sh ${SECOND_GENOME_NAME};
+	${SHELL_EXPORT} ./scripts/sort_bam.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.sam.bam;
+	${SHELL_EXPORT} ./scripts/index_bam.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.sam.bam.sorted.bam;
 
 # -------------------------------------------------------------------------------------- #
 # --- Analyze alignment output with flagstat, idxstats, and stats
@@ -330,9 +332,12 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.filtered.nodup.RG.bam : result
 results/${IND_ID}.bwa.human.passed.bam : results/${IND_ID}.bwa.human.fixed.filtered.nodup.RG.bam ${BEDTOOLS}/* # scripts/filter_mapped_reads_quality.sh
 	@echo "# === Filtering low quality reads mapped to human genome ====================== #";
 	${SHELL_EXPORT} ./scripts/filter_mapped_reads_quality.sh human;
+	${SHELL_EXPORT} ./scripts/index_bam.sh results/${IND_ID}.bwa.human.passed.bam;
 results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.bam : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.filtered.nodup.RG.bam ${BEDTOOLS}/* # scripts/filter_mapped_reads_quality.sh
 	@echo "# === Filtering low quality reads mapped to other genome ====================== #";
 	${SHELL_EXPORT} ./scripts/filter_mapped_reads_quality.sh ${SECOND_GENOME_NAME};
+	${SHELL_EXPORT} ./scripts/index_bam.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.bam;
+
 
 # Index the bam
 
