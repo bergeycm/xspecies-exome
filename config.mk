@@ -49,6 +49,8 @@ BEDTOOLS=/home/cmb433/exome_macaque/bin/BEDTools-Version-2.13.4/bin
 LIFTOVER=/home/cmb433/exome_macaque/bin/liftover
 PICARD=/home/cmb433/exome_macaque/bin/picard-tools-1.77
 BAMTOOLS=/home/cmb433/exome_macaque/bin/bamtools/bin
+GATK=/home/cmb433/exome_macaque/bin/GATK/
+BCFTOOLS=
 
 # -------------------------------------------------------------------------------------- #
 # --- Parameters for external programs

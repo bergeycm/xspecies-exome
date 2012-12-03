@@ -37,14 +37,19 @@ filter_unmapped : results/${IND_ID}.bwa.human.fixed.filtered.bam results/${IND_I
 remove_dups : results/${IND_ID}.bwa.human.fixed.filtered.nodup.bam results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.filtered.nodup.bam
 add_read_groups : results/${IND_ID}.bwa.human.fixed.filtered.nodup.RG.bam results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.filtered.nodup.RG.bam
 filter_bad_qual : results/${IND_ID}.bwa.human.passed.bam results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.bam
+# --- abyss_steps
+
+# --- snp_calling_steps
+local_realign : results/${IND_ID}.bwa.human.passed.bam.list results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.bam.list
 
 # Group steps together
 preliminary_steps : index_genome merge_beds liftover_beds
 pre_aln_filtering_steps : fastqc_raw filter_reads fastqc_filtered
 alignment_steps : align sampe sam2bam sort_and_index_bam get_alignment_stats
 post_alignment_filtering_steps : fix_mate_pairs filter_unmapped remove_dups add_read_groups filter_bad_qual
+snp_calling_steps : local_realign
 
-all : preliminary_steps pre_aln_filtering_steps alignment_steps post_alignment_filtering_steps
+all : preliminary_steps pre_aln_filtering_steps alignment_steps post_alignment_filtering_steps snp_calling_steps
 
 # Hack to be able to export Make variables to child scripts
 # Don't export variables from make that begin with non-alphanumeric character
@@ -342,6 +347,89 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.bam : results/${IND_ID}.bwa.$
 
 # ====================================================================================== #
 # -------------------------------------------------------------------------------------- #
+# --- George ABySS methods (not itemized yet)
+# -------------------------------------------------------------------------------------- #
+# ====================================================================================== #
+
+
+# ====================================================================================== #
+# -------------------------------------------------------------------------------------- #
+# --- SNP calling methods
+# -------------------------------------------------------------------------------------- #
+# ====================================================================================== #
+
+# -------------------------------------------------------------------------------------- #
+# --- Local realignment, step 1: ID realign targets
+# -------------------------------------------------------------------------------------- #
+
+# List of intervals to realign depends on BAM of reads that passed filtering, GATK, and scripts/local_realign.sh
+results/${IND_ID}.bwa.human.passed.bam.list : results/${IND_ID}.bwa.human.passed.bam ${GATK}/* #scripts/local_realign.sh
+	@echo "# === Identifying intervals in need or local realignment for human genome ===== #";
+	${SHELL_EXPORT} ./scripts/local_realign.sh human ${HUMAN_GENOME_FA};
+results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.bam.list : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.bam ${GATK}/* #scripts/local_realign.sh
+	@echo "# === Identifying intervals in need or local realignment for other genome ===== #";
+	${SHELL_EXPORT} ./scripts/local_realign.sh ${SECOND_GENOME_NAME} ${SECOND_GENOME_FA};
+
+# -------------------------------------------------------------------------------------- #
+# --- Local realignment, step 2: realign around indels
+# -------------------------------------------------------------------------------------- #
+
+#	# Make temp folder
+#	TMP_DIR=tmp/$RANDOM
+#	mkdir -p $TMP_DIR
+#
+#	java -Xmx4g -Djava.io.tmpdir=${TMP_DIR} \
+#		-jar ${GATK}/GenomeAnalysisTK.jar \
+#		-I results/${IND_ID}.bwa.human.passed.bam \
+#		-R ${HUMAN_GENOME_FA} \
+#		-T IndelRealigner \
+#		-targetIntervals results/${IND_ID}.bwa.human.passed.bam.list \
+#		-o results/${IND_ID}.bwa.human.passed.realn.bam
+#
+#	# Delete temp folder
+#	rm -r $TMP_DIR
+
+# -------------------------------------------------------------------------------------- #
+# --- Recalibrate base quality scores
+# -------------------------------------------------------------------------------------- #
+
+#	java -Xmx4g -jar ${GATK}/GenomeAnalysisTK.jar \
+#		-l INFO \
+#		-R ${HUMAN_GENOME_FA} \
+#		-I results/${IND_ID}.bwa.human.passed.realn.bam \
+#		-T TableRecalibration \
+#		--out results/${IND_ID}.bwa.human.passed.realn.recal.bam \
+#		-recalFile results/${IND_ID}.bwa.human.passed.realn.recal.bam.recal_data.csv
+
+# -------------------------------------------------------------------------------------- #
+# --- Call SNPs
+# -------------------------------------------------------------------------------------- #
+
+#	${SAMTOOLS}/samtools mpileup \
+#		-uf ${HUMAN_GENOME_FA} \
+#		results/${IND_ID}.bwa.human.passed.realn.recal.bam  | \
+#		${BCFTOOLS}/bcftools view -bvcg - \
+#		> results/${IND_ID}.bwa.human.passed.realn.recal.raw.bcf  
+
+# -------------------------------------------------------------------------------------- #
+# --- Filter SNPs for quality
+# -------------------------------------------------------------------------------------- #
+
+#	${BCFTOOLS}/bcftools view results/${IND_ID}.bwa.human.passed.realn.recal.raw.bcf   | \
+#		${BCFTOOLS}/vcfutils.pl varFilter -D100 \
+#		> results/${IND_ID}.bwa.human.passed.realn.recal.flt.vcf  
+
+# -------------------------------------------------------------------------------------- #
+# --- Get basic stats on SNPs
+# -------------------------------------------------------------------------------------- #
+
+#	export PERL5LIB=/home/cmb433/exome_macaque/bin/vcftools_0.1.9/perl:$PERL5LIB
+#	
+#	${VCFTOOLS}/vcf-stats results/${IND_ID}.bwa.human.passed.realn.recal.flt.vcf  
+
+
+# ====================================================================================== #
+# -------------------------------------------------------------------------------------- #
 # --- Coverage calculations
 # -------------------------------------------------------------------------------------- #
 # ====================================================================================== #
@@ -419,17 +507,8 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.bam : results/${IND_ID}.bwa.$
 
 # fac_6
 
-# ====================================================================================== #
-# -------------------------------------------------------------------------------------- #
-# --- George ABySS methods (not itemized yet)
-# -------------------------------------------------------------------------------------- #
-# ====================================================================================== #
 
-# ====================================================================================== #
-# -------------------------------------------------------------------------------------- #
-# --- SNP calling methods (not itemized yet)
-# -------------------------------------------------------------------------------------- #
-# ====================================================================================== #
+
 
 
 
