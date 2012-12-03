@@ -362,13 +362,13 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.bam : results/${IND_ID}.bwa.$
 # --- Local realignment, step 1: ID realign targets
 # -------------------------------------------------------------------------------------- #
 
-# List of intervals to realign depends on BAM of reads that passed filtering, GATK, and scripts/local_realign.sh
-results/${IND_ID}.bwa.human.passed.bam.list : results/${IND_ID}.bwa.human.passed.bam ${GATK}/* #scripts/local_realign.sh
+# List of intervals to realign depends on BAM of reads that passed filtering, GATK, and scripts/local_realign_get_targets.sh
+results/${IND_ID}.bwa.human.passed.bam.list : results/${IND_ID}.bwa.human.passed.bam ${GATK}/* #scripts/local_realign_get_targets.sh
 	@echo "# === Identifying intervals in need or local realignment for human genome ===== #";
-	${SHELL_EXPORT} ./scripts/local_realign.sh human ${HUMAN_GENOME_FA};
+	${SHELL_EXPORT} ./scripts/local_realign_get_targets.sh human ${HUMAN_GENOME_FA};
 results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.bam.list : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.bam ${GATK}/* #scripts/local_realign.sh
 	@echo "# === Identifying intervals in need or local realignment for other genome ===== #";
-	${SHELL_EXPORT} ./scripts/local_realign.sh ${SECOND_GENOME_NAME} ${SECOND_GENOME_FA};
+	${SHELL_EXPORT} ./scripts/local_realign_get_targets.sh ${SECOND_GENOME_NAME} ${SECOND_GENOME_FA};
 
 # -------------------------------------------------------------------------------------- #
 # --- Local realignment, step 2: realign around indels
