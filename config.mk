@@ -13,8 +13,11 @@ IND_ID=test_monkey
 
 # Paths to input reads files
 # Must be in FASTQ format
-READ1=./data/2012-11-28/macIll100.read1.fastq
-READ2=./data/2012-11-28/macIll100.read2.fastq
+#READ1=./data/2012-11-28/macIll100.read1.fastq
+#READ2=./data/2012-11-28/macIll100.read2.fastq
+
+READ1=./data/2012-12-03/macIll.read1.fastq
+READ2=./data/2012-12-03/macIll.read2.fastq
 
 # Paths to genomes files
 # Must be in FASTA format

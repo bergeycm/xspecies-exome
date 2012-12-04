@@ -21,10 +21,8 @@ _SECOND_BWA_INDEX = $(subst .fa,,${PROTO_SECOND_BWA_INDEX})
 index_genome : ${HUMAN_GENOME_FA}i ${_HUMAN_BWA_INDEX} ${SECOND_GENOME_FA}i ${_SECOND_BWA_INDEX}
 merge_beds : ${TARGETS}_MERGED ${CCDS}_MERGED
 liftover_beds : ${TARGETS} ${CCDS} ${TARGETS}_2nd_liftover.bed ${CCDS}_2nd_liftover.bed ${TARGETS}_2nd_liftover.unmapped.bed ${CCDS}_2nd_liftover.unmapped.bed results/liftOver_output.txt ${TARGETS}_2nd_liftover.bed_MERGED ${CCDS}_2nd_liftover.bed_MERGED 
-# --- pre_aln_filtering_steps:
-fastqc_raw : reports/${IND_ID}.read1.raw.stats.zip reports/${IND_ID}.read2.raw.stats.zip
-filter_reads : ${READ1}.filtered.fastq ${READ2}.filtered.fastq
-fastqc_filtered : reports/${IND_ID}.read1.filtered.stats.zip reports/${IND_ID}.read2.filtered.stats.zip
+# --- pre_aln_analysis_steps:
+fastqc : reports/${IND_ID}.read1.stats.zip reports/${IND_ID}.read2.stats.zip
 # --- alignment_steps
 align : results/${IND_ID}.read1.bwa.human.sai results/${IND_ID}.read1.bwa.${SECOND_GENOME_NAME}.sai
 sampe : results/${IND_ID}.bwa.human.sam results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.sam
@@ -48,12 +46,12 @@ get_snp_stats : reports/${IND_ID}.bwa.human.passed.realn.flt.vcf.stats.txt repor
 
 # Group steps together
 preliminary_steps : index_genome merge_beds liftover_beds
-pre_aln_filtering_steps : fastqc_raw filter_reads fastqc_filtered
+pre_aln_analysis_steps : fastqc
 alignment_steps : align sampe sam2bam sort_and_index_bam get_alignment_stats
 post_alignment_filtering_steps : fix_mate_pairs filter_unmapped remove_dups add_read_groups filter_bad_qual
 snp_calling_steps : local_realign_targets local_realign call_snps filter_snps get_snp_stats
 
-all : preliminary_steps pre_aln_filtering_steps alignment_steps post_alignment_filtering_steps snp_calling_steps
+all : preliminary_steps pre_aln_analysis_steps alignment_steps post_alignment_filtering_steps snp_calling_steps
 
 # Hack to be able to export Make variables to child scripts
 # Don't export variables from make that begin with non-alphanumeric character
@@ -146,7 +144,7 @@ ${CCDS}_2nd_liftover.bed_MERGED : ${BEDTOOLS}/* ${CCDS}_2nd_liftover.bed #script
 
 # ====================================================================================== #
 # -------------------------------------------------------------------------------------- #
-# --- Read filtering
+# --- Analyze reads
 # -------------------------------------------------------------------------------------- #
 # ====================================================================================== #
 
@@ -155,43 +153,13 @@ ${CCDS}_2nd_liftover.bed_MERGED : ${BEDTOOLS}/* ${CCDS}_2nd_liftover.bed #script
 # -------------------------------------------------------------------------------------- #
 
 # FastQC reports depend on read files, FastQC, and run_fastqc.sh
-reports/${IND_ID}.read1.raw.stats.zip : ${READ1} ${FASTQC}/* #scripts/run_fastqc.sh
+reports/${IND_ID}.read1.stats.zip : ${READ1} ${FASTQC}/* #scripts/run_fastqc.sh
 	@echo "# === Analyzing quality of reads (1st pair) before filtering ================== #";
-	${SHELL_EXPORT} ./scripts/run_fastqc.sh ${READ1} ${IND_ID}.read1.raw.stats;
-reports/${IND_ID}.read2.raw.stats.zip : ${READ2} ${FASTQC}/* #scripts/run_fastqc.sh
+	${SHELL_EXPORT} ./scripts/run_fastqc.sh ${READ1} ${IND_ID}.read1.stats;
+reports/${IND_ID}.read2.stats.zip : ${READ2} ${FASTQC}/* #scripts/run_fastqc.sh
 	@echo "# === Analyzing quality of reads (2nd pair) before filtering ================== #";
-	${SHELL_EXPORT} ./scripts/run_fastqc.sh ${READ2} ${IND_ID}.read2.raw.stats;
+	${SHELL_EXPORT} ./scripts/run_fastqc.sh ${READ2} ${IND_ID}.read2.stats;
 	
-# -------------------------------------------------------------------------------------- #
-# --- Filter reads
-# -------------------------------------------------------------------------------------- #
-
-# Filtered reads FASTQs depends on read files, FastX, and filter_reads.sh
-${READ1}.filtered.fastq : ${READ1} ${FASTX}/* #scripts/filter_reads.sh
-	@echo "# === Filtering reads (1st pair) with FastX =================================== #";
-	${SHELL_EXPORT} ./scripts/filter_reads.sh ${READ1};
-${READ2}.filtered.fastq : ${READ2} ${FASTX}/* #scripts/filter_reads.sh
-	@echo "# === Filtering reads (2nd pair) with FastX =================================== #";
-	${SHELL_EXPORT} ./scripts/filter_reads.sh ${READ2};
-
-# Call FastQC again
-reports/${IND_ID}.read1.filtered.stats.zip : ${READ1}.filtered.fastq ${FASTQC}/* #scripts/run_fastqc.sh
-	@echo "# === Analyzing quality of reads (1st pair) after filtering =================== #";
-	${SHELL_EXPORT} ./scripts/run_fastqc.sh ${READ1}.filtered.fastq ${IND_ID}.read1.filtered.stats;
-reports/${IND_ID}.read2.filtered.stats.zip : ${READ2}.filtered.fastq ${FASTQC}/* #scripts/run_fastqc.sh
-	@echo "# === Analyzing quality of reads (2nd pair) after filtering =================== #";
-	${SHELL_EXPORT} ./scripts/run_fastqc.sh ${READ2}.filtered.fastq ${IND_ID}.read2.filtered.stats;
-
-# -------------------------------------------------------------------------------------- #
-# --- Remove pairs whose partners were filtered, using cdbfasta & cdbyank
-# -------------------------------------------------------------------------------------- #
-
-# Is this really necessary? We can get rid of them after mapping with bamtools filter
-
-# bep_1_3
-
-# Call fastqc again
-
 # -------------------------------------------------------------------------------------- #
 # --- [Optional] randomly subsample reads, if say you want to compare two different runs
 # -------------------------------------------------------------------------------------- #
@@ -211,10 +179,10 @@ reports/${IND_ID}.read2.filtered.stats.zip : ${READ2}.filtered.fastq ${FASTQC}/*
 
 # Alignment output (*.sai) depends on bwa, the filtered reads FASTAs, the genome (index), and align.sh
 # Using the first read as a stand in for the both 
-results/${IND_ID}.read1.bwa.human.sai : ${BWA}/* ${READ1}.filtered.fastq ${READ2}.filtered.fastq ${HUMAN_GENOME_FA}i #scripts/align.sh
+results/${IND_ID}.read1.bwa.human.sai : ${BWA}/* ${READ1} ${READ2} ${HUMAN_GENOME_FA}i #scripts/align.sh
 	@echo "# === Aligning reads to human genome ========================================== #";
 	${SHELL_EXPORT} ./scripts/align.sh ${HUMAN_GENOME_FA} human;
-results/${IND_ID}.read1.bwa.${SECOND_GENOME_NAME}.sai : ${BWA}/* ${READ1}.filtered.fastq ${READ2}.filtered.fastq ${SECOND_GENOME_FA}i #scripts/align.sh
+results/${IND_ID}.read1.bwa.${SECOND_GENOME_NAME}.sai : ${BWA}/* ${READ1} ${READ2} ${SECOND_GENOME_FA}i #scripts/align.sh
 	@echo "# === Aligning reads to other genome ========================================== #";
 	${SHELL_EXPORT} ./scripts/align.sh ${SECOND_GENOME_FA} ${SECOND_GENOME_NAME};
 
