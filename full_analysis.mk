@@ -40,14 +40,15 @@ filter_bad_qual : results/${IND_ID}.bwa.human.passed.bam results/${IND_ID}.bwa.$
 # --- abyss_steps
 
 # --- snp_calling_steps
-local_realign : results/${IND_ID}.bwa.human.passed.bam.list results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.bam.list
+local_realign_targets : results/${IND_ID}.bwa.human.passed.bam.list results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.bam.list
+local_realign : results/${IND_ID}.bwa.human.passed.realn.bam results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam
 
 # Group steps together
 preliminary_steps : index_genome merge_beds liftover_beds
 pre_aln_filtering_steps : fastqc_raw filter_reads fastqc_filtered
 alignment_steps : align sampe sam2bam sort_and_index_bam get_alignment_stats
 post_alignment_filtering_steps : fix_mate_pairs filter_unmapped remove_dups add_read_groups filter_bad_qual
-snp_calling_steps : local_realign
+snp_calling_steps : local_realign_targets local_realign
 
 all : preliminary_steps pre_aln_filtering_steps alignment_steps post_alignment_filtering_steps snp_calling_steps
 
@@ -374,20 +375,13 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.bam.list : results/${IND_ID}.
 # --- Local realignment, step 2: realign around indels
 # -------------------------------------------------------------------------------------- #
 
-#	# Make temp folder
-#	TMP_DIR=tmp/$RANDOM
-#	mkdir -p $TMP_DIR
-#
-#	java -Xmx4g -Djava.io.tmpdir=${TMP_DIR} \
-#		-jar ${GATK}/GenomeAnalysisTK.jar \
-#		-I results/${IND_ID}.bwa.human.passed.bam \
-#		-R ${HUMAN_GENOME_FA} \
-#		-T IndelRealigner \
-#		-targetIntervals results/${IND_ID}.bwa.human.passed.bam.list \
-#		-o results/${IND_ID}.bwa.human.passed.realn.bam
-#
-#	# Delete temp folder
-#	rm -r $TMP_DIR
+# Realigned BAM depends on list of realign targets, BAM of reads that passed filtering, GATK, and scripts/local_realign.sh
+results/${IND_ID}.bwa.human.passed.realn.bam : results/${IND_ID}.bwa.human.passed.bam.list results/${IND_ID}.bwa.human.passed.bam ${GATK}/* #scripts/local_realign.sh
+	@echo "# === Doing local realignment for human genome ================================ #";
+	${SHELL_EXPORT} ./scripts/local_realign.sh human ${HUMAN_GENOME_FA};
+results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.bam.list results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.bam ${GATK}/* #scripts/local_realign.sh
+	@echo "# === Doing local realignment for other genome ================================ #";
+	${SHELL_EXPORT} ./scripts/local_realign.sh ${SECOND_GENOME_NAME} ${SECOND_GENOME_FA};
 
 # -------------------------------------------------------------------------------------- #
 # --- Recalibrate base quality scores
