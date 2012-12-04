@@ -42,13 +42,15 @@ filter_bad_qual : results/${IND_ID}.bwa.human.passed.bam results/${IND_ID}.bwa.$
 # --- snp_calling_steps
 local_realign_targets : results/${IND_ID}.bwa.human.passed.bam.list results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.bam.list
 local_realign : results/${IND_ID}.bwa.human.passed.realn.bam results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam
+call_snps : results/${IND_ID}.bwa.human.passed.realn.raw.bcf results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.raw.bcf
+filter_snps : results/${IND_ID}.bwa.human.passed.realn.flt.vcf results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.vcf
 
 # Group steps together
 preliminary_steps : index_genome merge_beds liftover_beds
 pre_aln_filtering_steps : fastqc_raw filter_reads fastqc_filtered
 alignment_steps : align sampe sam2bam sort_and_index_bam get_alignment_stats
 post_alignment_filtering_steps : fix_mate_pairs filter_unmapped remove_dups add_read_groups filter_bad_qual
-snp_calling_steps : local_realign_targets local_realign
+snp_calling_steps : local_realign_targets local_realign call_snps filter_snps
 
 all : preliminary_steps pre_aln_filtering_steps alignment_steps post_alignment_filtering_steps snp_calling_steps
 
@@ -387,19 +389,25 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam : results/${IND_ID}
 # --- Call SNPs
 # -------------------------------------------------------------------------------------- #
 
-#	${SAMTOOLS}/samtools mpileup \
-#		-uf ${HUMAN_GENOME_FA} \
-#		results/${IND_ID}.bwa.human.passed.realn.bam  | \
-#		${BCFTOOLS}/bcftools view -bvcg - \
-#		> results/${IND_ID}.bwa.human.passed.realn.raw.bcf  
-
+# Raw SNPs file depends on realigned BAM, VCFtools, BCFtools, and scripts/call_snps.sh
+results/${IND_ID}.bwa.human.passed.realn.raw.bcf : results/${IND_ID}.bwa.human.passed.realn.bam ${VCFTOOLS}/* ${BCFTOOLS}/* #scripts/call_snps.sh
+	@echo "# === Calling raw SNPs relative to human genome =============================== #";
+	${SHELL_EXPORT} ./scripts/call_snps.sh results/${IND_ID}.bwa.human.passed.realn.bam ${HUMAN_GENOME_FA};
+results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.raw.bcf : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam ${VCFTOOLS}/* ${BCFTOOLS}/* #scripts/call_snps.sh
+	@echo "# === Calling raw SNPs relative to human genome =============================== #";
+	${SHELL_EXPORT} ./scripts/call_snps.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam ${SECOND_GENOME_FA};
+	
 # -------------------------------------------------------------------------------------- #
 # --- Filter SNPs for quality
 # -------------------------------------------------------------------------------------- #
 
-#	${BCFTOOLS}/bcftools view results/${IND_ID}.bwa.human.passed.realn.raw.bcf   | \
-#		${BCFTOOLS}/vcfutils.pl varFilter -D100 \
-#		> results/${IND_ID}.bwa.human.passed.realn.flt.vcf  
+# Filtered SNP file depends on raw SNP file, BCFtools, and scripts/filter_snps.sh
+results/${IND_ID}.bwa.human.passed.realn.flt.vcf : results/${IND_ID}.bwa.human.passed.realn.raw.bcf ${BCFTOOLS}/* #scripts/filter_snps.sh
+	@echo "# === Filtering raw SNPs relative to human genome =============================== #";
+	${SHELL_EXPORT} ./scripts/filter_snps.sh results/${IND_ID}.bwa.human.passed.realn.raw.bcf;
+results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.vcf : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.raw.bcf ${BCFTOOLS}/* #scripts/filter_snps.sh
+	@echo "# === Filtering raw SNPs relative to other genome =============================== #";
+	${SHELL_EXPORT} ./scripts/filter_snps.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.raw.bcf;
 
 # -------------------------------------------------------------------------------------- #
 # --- Get basic stats on SNPs

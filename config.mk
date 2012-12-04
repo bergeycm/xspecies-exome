@@ -50,7 +50,8 @@ LIFTOVER=/home/cmb433/exome_macaque/bin/liftover
 PICARD=/home/cmb433/exome_macaque/bin/picard-tools-1.77
 BAMTOOLS=/home/cmb433/exome_macaque/bin/bamtools/bin
 GATK=/home/cmb433/exome_macaque/bin/GATK/
-BCFTOOLS=
+BCFTOOLS=/home/cmb433/exome_macaque/bin/samtools/bcftools/
+VCFTOOLS=/home/cmb433/exome_macaque/bin/vcftools_0.1.9/bin/
 
 # -------------------------------------------------------------------------------------- #
 # --- Parameters for external programs
