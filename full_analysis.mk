@@ -44,13 +44,14 @@ local_realign_targets : results/${IND_ID}.bwa.human.passed.bam.list results/${IN
 local_realign : results/${IND_ID}.bwa.human.passed.realn.bam results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam
 call_snps : results/${IND_ID}.bwa.human.passed.realn.raw.bcf results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.raw.bcf
 filter_snps : results/${IND_ID}.bwa.human.passed.realn.flt.vcf results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.vcf
+get_snp_stats : reports/${IND_ID}.bwa.human.passed.realn.flt.vcf.stats.txt reports/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.vcf.stats.txt
 
 # Group steps together
 preliminary_steps : index_genome merge_beds liftover_beds
 pre_aln_filtering_steps : fastqc_raw filter_reads fastqc_filtered
 alignment_steps : align sampe sam2bam sort_and_index_bam get_alignment_stats
 post_alignment_filtering_steps : fix_mate_pairs filter_unmapped remove_dups add_read_groups filter_bad_qual
-snp_calling_steps : local_realign_targets local_realign call_snps filter_snps
+snp_calling_steps : local_realign_targets local_realign call_snps filter_snps get_snp_stats
 
 all : preliminary_steps pre_aln_filtering_steps alignment_steps post_alignment_filtering_steps snp_calling_steps
 
@@ -413,10 +414,13 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.vcf : results/${IND
 # --- Get basic stats on SNPs
 # -------------------------------------------------------------------------------------- #
 
-#	export PERL5LIB=/home/cmb433/exome_macaque/bin/vcftools_0.1.9/perl:$PERL5LIB
-#	
-#	${VCFTOOLS}/vcf-stats results/${IND_ID}.bwa.human.passed.realn.flt.vcf  
-
+# File of SNP stats depends on VCF file, VCFtools, and scripts/get_snp_stats.sh
+reports/${IND_ID}.bwa.human.passed.realn.flt.vcf.stats.txt : results/${IND_ID}.bwa.human.passed.realn.flt.vcf ${VCFTOOLS}/* #scripts/get_snp_stats.sh
+	@echo "# === Getting basic SNPs stats for human genome =============================== #";
+	${SHELL_EXPORT} ./scripts/get_snp_stats.sh results/${IND_ID}.bwa.human.passed.realn.flt.vcf;
+reports/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.vcf.stats.txt : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.vcf ${VCFTOOLS}/* #scripts/get_snp_stats.sh
+	@echo "# === Getting basic SNPs stats for other genome =============================== #";
+	${SHELL_EXPORT} ./scripts/get_snp_stats.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.vcf;
 
 # ====================================================================================== #
 # -------------------------------------------------------------------------------------- #
