@@ -384,34 +384,22 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam : results/${IND_ID}
 	${SHELL_EXPORT} ./scripts/local_realign.sh ${SECOND_GENOME_NAME} ${SECOND_GENOME_FA};
 
 # -------------------------------------------------------------------------------------- #
-# --- Recalibrate base quality scores
-# -------------------------------------------------------------------------------------- #
-
-#	java -Xmx4g -jar ${GATK}/GenomeAnalysisTK.jar \
-#		-l INFO \
-#		-R ${HUMAN_GENOME_FA} \
-#		-I results/${IND_ID}.bwa.human.passed.realn.bam \
-#		-T TableRecalibration \
-#		--out results/${IND_ID}.bwa.human.passed.realn.recal.bam \
-#		-recalFile results/${IND_ID}.bwa.human.passed.realn.recal.bam.recal_data.csv
-
-# -------------------------------------------------------------------------------------- #
 # --- Call SNPs
 # -------------------------------------------------------------------------------------- #
 
 #	${SAMTOOLS}/samtools mpileup \
 #		-uf ${HUMAN_GENOME_FA} \
-#		results/${IND_ID}.bwa.human.passed.realn.recal.bam  | \
+#		results/${IND_ID}.bwa.human.passed.realn.bam  | \
 #		${BCFTOOLS}/bcftools view -bvcg - \
-#		> results/${IND_ID}.bwa.human.passed.realn.recal.raw.bcf  
+#		> results/${IND_ID}.bwa.human.passed.realn.raw.bcf  
 
 # -------------------------------------------------------------------------------------- #
 # --- Filter SNPs for quality
 # -------------------------------------------------------------------------------------- #
 
-#	${BCFTOOLS}/bcftools view results/${IND_ID}.bwa.human.passed.realn.recal.raw.bcf   | \
+#	${BCFTOOLS}/bcftools view results/${IND_ID}.bwa.human.passed.realn.raw.bcf   | \
 #		${BCFTOOLS}/vcfutils.pl varFilter -D100 \
-#		> results/${IND_ID}.bwa.human.passed.realn.recal.flt.vcf  
+#		> results/${IND_ID}.bwa.human.passed.realn.flt.vcf  
 
 # -------------------------------------------------------------------------------------- #
 # --- Get basic stats on SNPs
@@ -419,7 +407,7 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam : results/${IND_ID}
 
 #	export PERL5LIB=/home/cmb433/exome_macaque/bin/vcftools_0.1.9/perl:$PERL5LIB
 #	
-#	${VCFTOOLS}/vcf-stats results/${IND_ID}.bwa.human.passed.realn.recal.flt.vcf  
+#	${VCFTOOLS}/vcf-stats results/${IND_ID}.bwa.human.passed.realn.flt.vcf  
 
 
 # ====================================================================================== #
