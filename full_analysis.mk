@@ -43,13 +43,14 @@ local_realign : results/${IND_ID}.bwa.human.passed.realn.bam results/${IND_ID}.b
 call_snps : results/${IND_ID}.bwa.human.passed.realn.raw.bcf results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.raw.bcf
 filter_snps : results/${IND_ID}.bwa.human.passed.realn.flt.vcf results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.vcf
 get_snp_stats : reports/${IND_ID}.bwa.human.passed.realn.flt.vcf.stats.txt reports/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.vcf.stats.txt
+call_consensus : results/${IND_ID}.bwa.human.consensus.fq.gz results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.consensus.fq.gz
 
 # Group steps together
 preliminary_steps : index_genome merge_beds liftover_beds
 pre_aln_analysis_steps : fastqc
 alignment_steps : align sampe sam2bam sort_and_index_bam get_alignment_stats
 post_alignment_filtering_steps : fix_mate_pairs filter_unmapped remove_dups add_read_groups filter_bad_qual
-snp_calling_steps : local_realign_targets local_realign call_snps filter_snps get_snp_stats
+snp_calling_steps : local_realign_targets local_realign call_snps filter_snps get_snp_stats call_consensus
 
 all : preliminary_steps pre_aln_analysis_steps alignment_steps post_alignment_filtering_steps snp_calling_steps
 
@@ -363,7 +364,7 @@ results/${IND_ID}.bwa.human.passed.realn.raw.bcf : results/${IND_ID}.bwa.human.p
 	@echo "# === Calling raw SNPs relative to human genome =============================== #";
 	${SHELL_EXPORT} ./scripts/call_snps.sh results/${IND_ID}.bwa.human.passed.realn.bam ${HUMAN_GENOME_FA};
 results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.raw.bcf : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam ${VCFTOOLS}/* ${BCFTOOLS}/* #scripts/call_snps.sh
-	@echo "# === Calling raw SNPs relative to human genome =============================== #";
+	@echo "# === Calling raw SNPs relative to other genome =============================== #";
 	${SHELL_EXPORT} ./scripts/call_snps.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam ${SECOND_GENOME_FA};
 	
 # -------------------------------------------------------------------------------------- #
@@ -389,6 +390,18 @@ reports/${IND_ID}.bwa.human.passed.realn.flt.vcf.stats.txt : results/${IND_ID}.b
 reports/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.vcf.stats.txt : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.vcf ${VCFTOOLS}/* #scripts/get_snp_stats.sh
 	@echo "# === Getting basic SNPs stats for other genome =============================== #";
 	${SHELL_EXPORT} ./scripts/get_snp_stats.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.vcf;
+
+# -------------------------------------------------------------------------------------- #
+# --- Call consensus sequence
+# -------------------------------------------------------------------------------------- #
+
+# Consensus sequence depends on realigned BAM, SAMtools, BCFtools, and scripts/call_consensus.sh
+results/${IND_ID}.bwa.human.consensus.fq.gz : results/${IND_ID}.bwa.human.passed.realn.bam ${SAMTOOLS}/* ${BCFTOOLS}/* #scripts/call_consensus.sh
+	@echo "# === Calling consensus sequence relative to human human =============================== #";
+	${SHELL_EXPORT} ./scripts/call_consensus.sh results/${IND_ID}.bwa.human.passed.realn.bam ${HUMAN_GENOME_FA} human;
+results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.consensus.fq.gz : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam ${SAMTOOLS}/* ${BCFTOOLS}/* #scripts/call_consensus.sh
+	@echo "# === Calling consensus sequence relative to other genome =============================== #";
+	${SHELL_EXPORT} ./scripts/call_consensus.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam ${SECOND_GENOME_FA} ${SECOND_GENOME_NAME};
 
 # ====================================================================================== #
 # -------------------------------------------------------------------------------------- #

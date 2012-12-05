@@ -19,7 +19,7 @@ echo "${BCFTOOLS}/bcftools view ${IN_BCF} | \
 	> ${OUT_VCF};";
 
 ${BCFTOOLS}/bcftools view ${IN_BCF} | \
-	${BCFTOOLS}/vcfutils.pl varFilter -d 2 -D 100 \
+	${BCFTOOLS}/vcfutils.pl varFilter -d ${SNP_MIN_COV} -D ${SNP_MAX_COV} \
 	> ${OUT_VCF};
 
 exit;

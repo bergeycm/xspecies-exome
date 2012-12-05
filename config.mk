@@ -62,3 +62,5 @@ VCFTOOLS=/home/cmb433/exome_macaque/bin/vcftools_0.1.9/bin
 
 BWA_ALN_PARAM=-e 63 -i 15 -L -l 31 -t 8 -I 
 FASTX_PARAM=-q 13 -p 80 -v 
+SNP_MIN_COV=2
+SNP_MAX_COV=100
