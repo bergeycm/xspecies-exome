@@ -44,6 +44,9 @@ call_snps : results/${IND_ID}.bwa.human.passed.realn.raw.bcf results/${IND_ID}.b
 filter_snps : results/${IND_ID}.bwa.human.passed.realn.flt.vcf results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.vcf
 get_snp_stats : reports/${IND_ID}.bwa.human.passed.realn.flt.vcf.stats.txt reports/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.vcf.stats.txt
 call_consensus : results/${IND_ID}.bwa.human.consensus.fq.gz results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.consensus.fq.gz
+# --- coverage_calc_steps
+make_picard_intervals : results/${IND_ID}.bwa.human.passed.realn.bam.picard.baits.bed results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam.picard.baits.bed
+get_hsmetrics : reports/${IND_ID}.bwa.human.hsmetrics.txt reports/${IND_ID}.bwa.${SECOND_GENOME_NAME}.hsmetrics.txt
 
 # Group steps together
 preliminary_steps : index_genome merge_beds liftover_beds
@@ -51,8 +54,9 @@ pre_aln_analysis_steps : fastqc
 alignment_steps : align sampe sam2bam sort_and_index_bam get_alignment_stats
 post_alignment_filtering_steps : fix_mate_pairs filter_unmapped remove_dups add_read_groups filter_bad_qual
 snp_calling_steps : local_realign_targets local_realign call_snps filter_snps get_snp_stats call_consensus
+coverage_calc_steps : make_picard_intervals get_hsmetrics
 
-all : preliminary_steps pre_aln_analysis_steps alignment_steps post_alignment_filtering_steps snp_calling_steps
+all : preliminary_steps pre_aln_analysis_steps alignment_steps post_alignment_filtering_steps snp_calling_steps coverage_calc_steps
 
 # Hack to be able to export Make variables to child scripts
 # Don't export variables from make that begin with non-alphanumeric character
@@ -410,9 +414,39 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.consensus.fq.gz : results/${IND_ID}.
 # ====================================================================================== #
 
 # -------------------------------------------------------------------------------------- #
+# --- Make Picard-friendly intervals lists
+# -------------------------------------------------------------------------------------- #
+
+# Picard intervals lists depends on realigned BAM, target BED file, CCDS BED file, SAMtools and scripts/make_picard_intervals.sh
+results/${IND_ID}.bwa.human.passed.realn.bam.picard.baits.bed : results/${IND_ID}.bwa.human.passed.realn.bam ${TARGETS} ${CCDS} ${SAMTOOLS}/* #scripts/make_picard_intervals.sh
+	@echo "# === Making Picard-friendly intervals files for human genome =============================== #";
+	${SHELL_EXPORT} ./scripts/make_picard_intervals.sh results/${IND_ID}.bwa.human.passed.realn.bam ${TARGETS} ${CCDS};
+results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam.picard.baits.bed : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam ${TARGETS}_2nd_liftover.bed ${CCDS}_2nd_liftover.bed ${SAMTOOLS}/* #scripts/make_picard_intervals.sh
+	@echo "# === Making Picard-friendly intervals files for other genome =============================== #";
+	${SHELL_EXPORT} ./scripts/make_picard_intervals.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam ${TARGETS}_2nd_liftover.bed ${CCDS}_2nd_liftover.bed;
+
+# -------------------------------------------------------------------------------------- #
 # --- Calculate coverage of targeted regions
 # -------------------------------------------------------------------------------------- #
 
+java -Xmx10g -jar ${PICARD}/CalculateHsMetrics.jar \
+	BAIT_INTERVALS=${IN_BAM}.picard.baits.bed \
+	TARGET_INTERVALS=${IN_BAM}.picard.ccds.bed \
+	INPUT=${IN_BAM} \
+	OUTPUT=reports/${IND_ID}.bwa.${GENOME_NAME}.hsmetrics.txt
+
+# Picards HsMetrics output depends on realigned BAM, Picard-formatted BED files for targets and CCDS, Picard, and scripts/get_hsmetrics.sh
+reports/${IND_ID}.bwa.human.hsmetrics.txt : results/${IND_ID}.bwa.human.passed.realn.bam results/${IND_ID}.bwa.human.passed.realn.bam.picard.baits.bed results/${IND_ID}.bwa.human.passed.realn.bam.picard.ccds.bed ${PICARD}/* #scripts/get_hsmetrics.sh
+	@echo "# === Calculating coverage statistics with Picard HsMetrics for human genome =============================== #";
+	${SHELL_EXPORT} ./scripts/get_hsmetrics.sh results/${IND_ID}.bwa.human.passed.realn.bam human;
+reports/${IND_ID}.bwa.${SECOND_GENOME_NAME}.hsmetrics.txt : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam.picard.baits.bed results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam.picard.ccds.bed ${PICARD}/* #scripts/get_hsmetrics.sh
+	@echo "# === Calculating coverage statistics with Picard HsMetrics for other genome =============================== #";
+	${SHELL_EXPORT} ./scripts/get_hsmetrics.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam ${SECOND_GENOME_NAME};
+
+
+
+	
+# Old way:
 # cov_0_1
 
 # -------------------------------------------------------------------------------------- #
