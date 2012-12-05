@@ -15,11 +15,11 @@ IN_BCF=$1
 OUT_VCF=$(echo $IN_BCF | sed 's/\.raw\.bcf/.flt.vcf/')
 
 echo "${BCFTOOLS}/bcftools view ${IN_BCF} | \
-	${BCFTOOLS}/vcfutils.pl varFilter -D100 \
+	${BCFTOOLS}/vcfutils.pl varFilter -d 2 -D 100 \
 	> ${OUT_VCF};";
 
 ${BCFTOOLS}/bcftools view ${IN_BCF} | \
-	${BCFTOOLS}/vcfutils.pl varFilter -D100 \
+	${BCFTOOLS}/vcfutils.pl varFilter -d 2 -D 100 \
 	> ${OUT_VCF};
 
 exit;

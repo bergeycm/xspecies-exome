@@ -16,7 +16,7 @@ GENOME_PATH=$(echo $1 | sed 's/.[^.]*$//g')
 
 GENOME_CODE=$2
 
-$BWA/bwa sampe \
+$BWA/bwa sampe -A \
 	$GENOME_PATH \
 	results/${IND_ID}.read1.bwa.${GENOME_CODE}.sai \
 	results/${IND_ID}.read2.bwa.${GENOME_CODE}.sai \
