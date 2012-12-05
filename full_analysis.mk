@@ -444,8 +444,6 @@ reports/${IND_ID}.bwa.${SECOND_GENOME_NAME}.hsmetrics.txt : results/${IND_ID}.bw
 	${SHELL_EXPORT} ./scripts/get_hsmetrics.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam ${SECOND_GENOME_NAME};
 
 
-
-	
 # Old way:
 # cov_0_1
 
