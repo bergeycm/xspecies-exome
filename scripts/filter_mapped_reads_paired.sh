@@ -1,7 +1,7 @@
 #!/bin/sh
 
 # ------------------------------------------------------------------------------
-# --- Filter mapped reads for mapping, pairing, and proper paired
+# --- Filter mapped reads for mapping and pairing
 # ------------------------------------------------------------------------------
 
 # Check that genome code was passed as parameter
@@ -13,10 +13,11 @@ fi
 
 GENOME_CODE=$1
 
+# Removed "-isProperPair true"
+
 ${BAMTOOLS}/bamtools filter \
 	-isMapped true \
 	-isPaired true \
-	-isProperPair true \
 	-in results/${IND_ID}.bwa.${GENOME_CODE}.fixed.bam \
 	-out results/${IND_ID}.bwa.${GENOME_CODE}.fixed.filtered.bam
 
