@@ -16,13 +16,13 @@ OUT_BCF=$(echo $IN_BAM | sed 's/\.bam/.raw.bcf/')
 GENOME_FA=$2
 
 echo "${SAMTOOLS}/samtools mpileup \
-	-uf ${GENOME_FA} \
+	-Augf ${GENOME_FA} \
 	${IN_BAM}  | \
 	${BCFTOOLS}/bcftools view -bvcg - \
 	> ${OUT_BCF}";
 
 ${SAMTOOLS}/samtools mpileup \
-	-uf ${GENOME_FA} \
+	-Augf ${GENOME_FA} \
 	${IN_BAM}  | \
 	${BCFTOOLS}/bcftools view -bvcg - \
 	> ${OUT_BCF}

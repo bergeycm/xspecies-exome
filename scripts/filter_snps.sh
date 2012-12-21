@@ -15,7 +15,7 @@ IN_BCF=$1
 OUT_VCF=$(echo $IN_BCF | sed 's/\.raw\.bcf/.flt.vcf/')
 
 echo "${BCFTOOLS}/bcftools view ${IN_BCF} | \
-	${BCFTOOLS}/vcfutils.pl varFilter -d 2 -D 100 \
+	${BCFTOOLS}/vcfutils.pl varFilter -d ${SNP_MIN_COV} -D ${SNP_MAX_COV} \
 	> ${OUT_VCF};";
 
 ${BCFTOOLS}/bcftools view ${IN_BCF} | \

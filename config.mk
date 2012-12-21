@@ -46,7 +46,7 @@ CHAINFILE=/home/cmb433/exome_macaque/bin/liftover/hg19ToRheMac2.over.chain
 
 FASTQC=/home/cmb433/exome_macaque/bin/FastQC
 FASTX=/home/cmb433/exome_macaque/bin/fastx
-BWA=/home/cmb433/exome_macaque/bin/bwa-0.6.1
+BWA=/home/cmb433/exome_macaque/bin/bwa-0.6.2
 SAMTOOLS=/home/cmb433/exome_macaque/bin/samtools
 BEDTOOLS=/home/cmb433/exome_macaque/bin/BEDTools-Version-2.13.4/bin
 LIFTOVER=/home/cmb433/exome_macaque/bin/liftover
@@ -61,7 +61,8 @@ PSMC=/home/cmb433/exome_macaque/bin/psmc
 # --- Parameters for external programs
 # -------------------------------------------------------------------------------------- #
 
-BWA_ALN_PARAM=-e 63 -i 15 -L -l 31 -t 8 -I 
+#BWA_ALN_PARAM=-e 63 -i 15 -L -l 31 -t 8 -I 
+BWA_ALN_PARAM=-t 8 
 FASTX_PARAM=-q 13 -p 80 -v 
-SNP_MIN_COV=2
-SNP_MAX_COV=100
+SNP_MIN_COV=5
+SNP_MAX_COV=1000

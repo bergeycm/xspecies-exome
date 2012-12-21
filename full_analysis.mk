@@ -47,6 +47,10 @@ call_consensus : results/${IND_ID}.bwa.human.consensus.fq.gz results/${IND_ID}.b
 # --- coverage_calc_steps
 make_picard_intervals : results/${IND_ID}.bwa.human.passed.realn.bam.picard.baits.bed results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam.picard.baits.bed
 get_hsmetrics : reports/${IND_ID}.bwa.human.hsmetrics.txt reports/${IND_ID}.bwa.${SECOND_GENOME_NAME}.hsmetrics.txt
+# --- psmc_steps
+fastq_to_psmcfa : results/${IND_ID}.bwa.human.diploid.psmcfa results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.psmcfa
+psmc : results/${IND_ID}.bwa.human.diploid.psmc results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.psmc
+psmc_ms_plot : results/${IND_ID}.bwa.human.diploid.plot results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.plot
 
 # Group steps together
 preliminary_steps : index_genome merge_beds liftover_beds
@@ -55,8 +59,9 @@ alignment_steps : align sampe sam2bam sort_and_index_bam get_alignment_stats
 post_alignment_filtering_steps : fix_mate_pairs filter_unmapped remove_dups add_read_groups filter_bad_qual
 snp_calling_steps : local_realign_targets local_realign call_snps filter_snps get_snp_stats call_consensus
 coverage_calc_steps : make_picard_intervals get_hsmetrics
+psmc_steps : fastq_to_psmcfa psmc psmc_ms_plot
 
-all : preliminary_steps pre_aln_analysis_steps alignment_steps post_alignment_filtering_steps snp_calling_steps coverage_calc_steps
+all : preliminary_steps pre_aln_analysis_steps alignment_steps post_alignment_filtering_steps snp_calling_steps coverage_calc_steps psmc_steps
 
 # Hack to be able to export Make variables to child scripts
 # Don't export variables from make that begin with non-alphanumeric character
@@ -300,11 +305,11 @@ reports/${IND_ID}.bwa.${SECOND_GENOME_NAME}.aln_stats.pairsfix.flt.txt : results
 
 # BAM sans dups [index file] depends on output BAM from filter_mapped_reads_paired.sh, Picard, and scripts/remove_dups.sh
 results/${IND_ID}.bwa.human.fixed.filtered.nodup.bam.bai : results/${IND_ID}.bwa.human.fixed.filtered.bam ${PICARD}/* # scripts/remove_dups.sh
-	@echo "# === Removing duplicate reads mapped to human genome ================================== #";
+	@echo "# === Removing duplicate reads mapped to human genome ========================= #";
 	${SHELL_EXPORT} ./scripts/remove_dups.sh human;
 	${SHELL_EXPORT} ./scripts/index_bam.sh results/${IND_ID}.bwa.human.fixed.filtered.nodup.bam;
 results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.filtered.nodup.bam.bai : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.filtered.bam ${PICARD}/* # scripts/remove_dups.sh
-	@echo "# === Removing duplicate reads mapped to other genome ================================== #";
+	@echo "# === Removing duplicate reads mapped to other genome ========================= #";
 	${SHELL_EXPORT} ./scripts/remove_dups.sh ${SECOND_GENOME_NAME};
 	${SHELL_EXPORT} ./scripts/index_bam.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.filtered.nodup.bam;
 
@@ -389,10 +394,10 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam : results/${IND_ID}
 
 # Align stats report depends on realigned BAM and scripts/get_alignment_stats.sh
 reports/${IND_ID}.bwa.human.aln_stats.passed.realn.txt : results/${IND_ID}.bwa.human.passed.realn.bam #scripts/get_alignment_stats.sh
-	@echo "# === Analyzing alignment output for human genome (locally realigned) ===== #";
+	@echo "# === Analyzing alignment output for human genome (locally realigned) ========= #";
 	${SHELL_EXPORT} ./scripts/get_alignment_stats.sh results/${IND_ID}.bwa.human.passed.realn.bam reports/${IND_ID}.bwa.human.aln_stats.passed.realn.txt;
 reports/${IND_ID}.bwa.${SECOND_GENOME_NAME}.aln_stats.passed.realn.txt : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam #scripts/get_alignment_stats.sh
-	@echo "# === Analyzing alignment output for other genome (locally realigned) ===== #";
+	@echo "# === Analyzing alignment output for other genome (locally realigned) ========= #";
 	${SHELL_EXPORT} ./scripts/get_alignment_stats.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam reports/${IND_ID}.bwa.${SECOND_GENOME_NAME}.aln_stats.passed.realn.txt;
 
 # -------------------------------------------------------------------------------------- #
@@ -400,10 +405,10 @@ reports/${IND_ID}.bwa.${SECOND_GENOME_NAME}.aln_stats.passed.realn.txt : results
 # -------------------------------------------------------------------------------------- #
 
 # Raw SNPs file depends on realigned BAM, VCFtools, BCFtools, and scripts/call_snps.sh
-results/${IND_ID}.bwa.human.passed.realn.raw.bcf : results/${IND_ID}.bwa.human.passed.realn.bam ${VCFTOOLS}/* ${BCFTOOLS}/* #scripts/call_snps.sh
+results/${IND_ID}.bwa.human.passed.realn.raw.bcf : results/${IND_ID}.bwa.human.passed.realn.bam #${VCFTOOLS}/* ${BCFTOOLS}/* #scripts/call_snps.sh
 	@echo "# === Calling raw SNPs relative to human genome =============================== #";
 	${SHELL_EXPORT} ./scripts/call_snps.sh results/${IND_ID}.bwa.human.passed.realn.bam ${HUMAN_GENOME_FA};
-results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.raw.bcf : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam ${VCFTOOLS}/* ${BCFTOOLS}/* #scripts/call_snps.sh
+results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.raw.bcf : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam #${VCFTOOLS}/* ${BCFTOOLS}/* #scripts/call_snps.sh
 	@echo "# === Calling raw SNPs relative to other genome =============================== #";
 	${SHELL_EXPORT} ./scripts/call_snps.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam ${SECOND_GENOME_FA};
 	
@@ -412,11 +417,11 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.raw.bcf : results/${IND
 # -------------------------------------------------------------------------------------- #
 
 # Filtered SNP file depends on raw SNP file, BCFtools, and scripts/filter_snps.sh
-results/${IND_ID}.bwa.human.passed.realn.flt.vcf : results/${IND_ID}.bwa.human.passed.realn.raw.bcf ${BCFTOOLS}/* #scripts/filter_snps.sh
-	@echo "# === Filtering raw SNPs relative to human genome =============================== #";
+results/${IND_ID}.bwa.human.passed.realn.flt.vcf : results/${IND_ID}.bwa.human.passed.realn.raw.bcf #${BCFTOOLS}/* #scripts/filter_snps.sh
+	@echo "# === Filtering raw SNPs relative to human genome ============================= #";
 	${SHELL_EXPORT} ./scripts/filter_snps.sh results/${IND_ID}.bwa.human.passed.realn.raw.bcf;
-results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.vcf : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.raw.bcf ${BCFTOOLS}/* #scripts/filter_snps.sh
-	@echo "# === Filtering raw SNPs relative to other genome =============================== #";
+results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.vcf : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.raw.bcf #${BCFTOOLS}/* #scripts/filter_snps.sh
+	@echo "# === Filtering raw SNPs relative to other genome ============================= #";
 	${SHELL_EXPORT} ./scripts/filter_snps.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.raw.bcf;
 
 # -------------------------------------------------------------------------------------- #
@@ -424,10 +429,10 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.vcf : results/${IND
 # -------------------------------------------------------------------------------------- #
 
 # File of SNP stats depends on VCF file, VCFtools, and scripts/get_snp_stats.sh
-reports/${IND_ID}.bwa.human.passed.realn.flt.vcf.stats.txt : results/${IND_ID}.bwa.human.passed.realn.flt.vcf ${VCFTOOLS}/* #scripts/get_snp_stats.sh
+reports/${IND_ID}.bwa.human.passed.realn.flt.vcf.stats.txt : results/${IND_ID}.bwa.human.passed.realn.flt.vcf #${VCFTOOLS}/* #scripts/get_snp_stats.sh
 	@echo "# === Getting basic SNPs stats for human genome =============================== #";
 	${SHELL_EXPORT} ./scripts/get_snp_stats.sh results/${IND_ID}.bwa.human.passed.realn.flt.vcf;
-reports/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.vcf.stats.txt : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.vcf ${VCFTOOLS}/* #scripts/get_snp_stats.sh
+reports/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.vcf.stats.txt : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.vcf #${VCFTOOLS}/* #scripts/get_snp_stats.sh
 	@echo "# === Getting basic SNPs stats for other genome =============================== #";
 	${SHELL_EXPORT} ./scripts/get_snp_stats.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.vcf;
 
@@ -437,11 +442,11 @@ reports/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.vcf.stats.txt : res
 
 # Consensus sequence depends on realigned BAM, SAMtools, BCFtools, and scripts/call_consensus.sh
 results/${IND_ID}.bwa.human.consensus.fq.gz : results/${IND_ID}.bwa.human.passed.realn.bam ${SAMTOOLS}/* ${BCFTOOLS}/* #scripts/call_consensus.sh
-	@echo "# === Calling consensus sequence relative to human human =============================== #";
-	${SHELL_EXPORT} ./scripts/call_consensus.sh results/${IND_ID}.bwa.human.passed.realn.bam ${HUMAN_GENOME_FA} human;
+	@echo "# === Calling consensus sequence relative to human genome ===================== #";
+	${SHELL_EXPORT} ./scripts/call_consensus.sh results/${IND_ID}.bwa.human.passed.realn.bam ${HUMAN_GENOME_FA} human ${TARGETS}_MERGED;
 results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.consensus.fq.gz : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam ${SAMTOOLS}/* ${BCFTOOLS}/* #scripts/call_consensus.sh
-	@echo "# === Calling consensus sequence relative to other genome =============================== #";
-	${SHELL_EXPORT} ./scripts/call_consensus.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam ${SECOND_GENOME_FA} ${SECOND_GENOME_NAME};
+	@echo "# === Calling consensus sequence relative to other genome ===================== #";
+	${SHELL_EXPORT} ./scripts/call_consensus.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam ${SECOND_GENOME_FA} ${SECOND_GENOME_NAME} ${TARGETS}_2nd_liftover.bed_MERGED;
 
 # ====================================================================================== #
 # -------------------------------------------------------------------------------------- #
@@ -455,28 +460,28 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.consensus.fq.gz : results/${IND_ID}.
 
 # Picard intervals lists depends on realigned BAM, target BED file, CCDS BED file, SAMtools and scripts/make_picard_intervals.sh
 results/${IND_ID}.bwa.human.passed.realn.bam.picard.baits.bed : results/${IND_ID}.bwa.human.passed.realn.bam ${TARGETS} ${CCDS} ${SAMTOOLS}/* #scripts/make_picard_intervals.sh
-	@echo "# === Making Picard-friendly intervals files for human genome =============================== #";
+	@echo "# === Making Picard-friendly intervals files for human genome ================= #";
 	${SHELL_EXPORT} ./scripts/make_picard_intervals.sh results/${IND_ID}.bwa.human.passed.realn.bam ${TARGETS} ${CCDS};
 results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam.picard.baits.bed : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam ${TARGETS}_2nd_liftover.bed ${CCDS}_2nd_liftover.bed ${SAMTOOLS}/* #scripts/make_picard_intervals.sh
-	@echo "# === Making Picard-friendly intervals files for other genome =============================== #";
+	@echo "# === Making Picard-friendly intervals files for other genome ================= #";
 	${SHELL_EXPORT} ./scripts/make_picard_intervals.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam ${TARGETS}_2nd_liftover.bed ${CCDS}_2nd_liftover.bed;
 
 # -------------------------------------------------------------------------------------- #
 # --- Calculate coverage of targeted regions
 # -------------------------------------------------------------------------------------- #
 
-java -Xmx10g -jar ${PICARD}/CalculateHsMetrics.jar \
-	BAIT_INTERVALS=${IN_BAM}.picard.baits.bed \
-	TARGET_INTERVALS=${IN_BAM}.picard.ccds.bed \
-	INPUT=${IN_BAM} \
-	OUTPUT=reports/${IND_ID}.bwa.${GENOME_NAME}.hsmetrics.txt
+#java -Xmx10g -jar ${PICARD}/CalculateHsMetrics.jar \
+#	BAIT_INTERVALS=${IN_BAM}.picard.baits.bed \
+#	TARGET_INTERVALS=${IN_BAM}.picard.ccds.bed \
+#	INPUT=${IN_BAM} \
+#	OUTPUT=reports/${IND_ID}.bwa.${GENOME_NAME}.hsmetrics.txt
 
 # Picards HsMetrics output depends on realigned BAM, Picard-formatted BED files for targets and CCDS, Picard, and scripts/get_hsmetrics.sh
 reports/${IND_ID}.bwa.human.hsmetrics.txt : results/${IND_ID}.bwa.human.passed.realn.bam results/${IND_ID}.bwa.human.passed.realn.bam.picard.baits.bed results/${IND_ID}.bwa.human.passed.realn.bam.picard.ccds.bed ${PICARD}/* #scripts/get_hsmetrics.sh
-	@echo "# === Calculating coverage statistics with Picard HsMetrics for human genome =============================== #";
+	@echo "# === Calculating coverage statistics with Picard HsMetrics for human genome == #";
 	${SHELL_EXPORT} ./scripts/get_hsmetrics.sh results/${IND_ID}.bwa.human.passed.realn.bam human;
 reports/${IND_ID}.bwa.${SECOND_GENOME_NAME}.hsmetrics.txt : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam.picard.baits.bed results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam.picard.ccds.bed ${PICARD}/* #scripts/get_hsmetrics.sh
-	@echo "# === Calculating coverage statistics with Picard HsMetrics for other genome =============================== #";
+	@echo "# === Calculating coverage statistics with Picard HsMetrics for other genome == #";
 	${SHELL_EXPORT} ./scripts/get_hsmetrics.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam ${SECOND_GENOME_NAME};
 
 
@@ -549,4 +554,49 @@ reports/${IND_ID}.bwa.${SECOND_GENOME_NAME}.hsmetrics.txt : results/${IND_ID}.bw
 # -------------------------------------------------------------------------------------- #
 
 # fac_6
+
+# ====================================================================================== #
+# -------------------------------------------------------------------------------------- #
+# --- Run PSMC to infer demographic history
+# -------------------------------------------------------------------------------------- #
+# ====================================================================================== #
+
+# -------------------------------------------------------------------------------------- #
+# --- Convert FASTQ to PSMCFA
+# -------------------------------------------------------------------------------------- #
+
+# PSMCFA file depends on consensus FASTQ, PSMC, and scripts/convert_to_psmcfa.sh
+results/${IND_ID}.bwa.human.diploid.psmcfa : results/${IND_ID}.bwa.human.consensus.fq.gz ${PSMC}/* #scripts/convert_to_psmcfa.sh
+	@echo "# === Converting FASTQ to PSMCFA for human genome ============================= #";
+	${SHELL_EXPORT} ./scripts/convert_to_psmcfa.sh results/${IND_ID}.bwa.human.consensus.fq.gz;
+results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.psmcfa : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.consensus.fq.gz ${PSMC}/* #scripts/convert_to_psmcfa.sh
+	@echo "# === Converting FASTQ to PSMCFA for other genome ============================= #";
+	${SHELL_EXPORT} ./scripts/convert_to_psmcfa.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.consensus.fq.gz;
+
+# -------------------------------------------------------------------------------------- #
+# --- Run PSMC
+# -------------------------------------------------------------------------------------- #
+
+# PSMC output file depends on PSMCFA file, PSMC, and scripts/run_psmc.sh
+results/${IND_ID}.bwa.human.diploid.psmc : results/${IND_ID}.bwa.human.diploid.psmcfa ${PSMC}/* #scripts/run_psmc.sh
+	@echo "# === Running PSMC for consensus from human genome ============================ #";
+	${SHELL_EXPORT} ./scripts/run_psmc.sh results/${IND_ID}.bwa.human.diploid.psmcfa;
+results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.psmc : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.psmcfa ${PSMC}/* #scripts/run_psmc.sh
+	@echo "# === Running PSMC for consensus from other genome ============================ #";
+	${SHELL_EXPORT} ./scripts/run_psmc.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.psmcfa;
+
+# -------------------------------------------------------------------------------------- #
+# --- Call psmc2history.pl and Plot PSMC results
+# -------------------------------------------------------------------------------------- #
+
+# PSMC plot file depends on PSMC file, PSMC, and scripts/psmc_to_ms_and_plot.sh
+results/${IND_ID}.bwa.human.diploid.plot : results/${IND_ID}.bwa.human.diploid.psmc ${PSMC}/* #scripts/psmc_to_ms_and_plot.sh
+	@echo "# === Generating ms command and plot from PSMC for human genome =============== #";
+	${SHELL_EXPORT} ./scripts/psmc_to_ms_and_plot.sh results/${IND_ID}.bwa.human.diploid.psmc;
+results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.plot : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.psmc ${PSMC}/* #scripts/psmc_to_ms_and_plot.sh
+	@echo "# === Generating ms command and plot from PSMC for other genome =============== #";
+	${SHELL_EXPORT} ./scripts/psmc_to_ms_and_plot.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.psmc;
+
+
+
 
