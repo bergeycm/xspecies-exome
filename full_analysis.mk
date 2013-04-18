@@ -48,9 +48,17 @@ call_consensus : results/${IND_ID}.bwa.human.consensus.fq.gz results/${IND_ID}.b
 make_picard_intervals : results/${IND_ID}.bwa.human.passed.realn.bam.picard.baits.bed results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam.picard.baits.bed
 get_hsmetrics : reports/${IND_ID}.bwa.human.hsmetrics.txt reports/${IND_ID}.bwa.${SECOND_GENOME_NAME}.hsmetrics.txt
 # --- psmc_steps
-fastq_to_psmcfa : results/${IND_ID}.bwa.human.diploid.psmcfa results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.psmcfa
-psmc : results/${IND_ID}.bwa.human.diploid.psmc results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.psmc
-psmc_ms_plot : results/${IND_ID}.bwa.human.diploid.plot results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.plot
+#fastq_to_psmcfa : results/${IND_ID}.bwa.human.diploid.psmcfa results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.psmcfa
+#psmc : results/${IND_ID}.bwa.human.diploid.psmc results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.psmc
+#psmc_ms_plot : results/${IND_ID}.bwa.human.diploid.plot results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.plot
+# --- demog_steps
+index_snps : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.pileup
+call_bsnp : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out
+filter_bsnp : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4
+bed_from_bsnp : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4.bed
+# --- annotate_steps
+convert_annovar : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.annonvar
+annovar : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.annonvar.exonic_variant_function
 
 # Group steps together
 preliminary_steps : index_genome merge_beds liftover_beds
@@ -59,15 +67,24 @@ alignment_steps : align sampe sam2bam sort_and_index_bam get_alignment_stats
 post_alignment_filtering_steps : fix_mate_pairs filter_unmapped remove_dups add_read_groups filter_bad_qual
 snp_calling_steps : local_realign_targets local_realign call_snps filter_snps get_snp_stats call_consensus
 coverage_calc_steps : make_picard_intervals get_hsmetrics
-psmc_steps : fastq_to_psmcfa psmc psmc_ms_plot
+#psmc_steps : fastq_to_psmcfa psmc psmc_ms_plot
+pre_demog_steps : index_snps call_bsnp filter_bsnp bed_from_bsnp
+annotate_steps : convert_annovar annovar
 
-all : preliminary_steps pre_aln_analysis_steps alignment_steps post_alignment_filtering_steps snp_calling_steps coverage_calc_steps psmc_steps
+all : preliminary_steps pre_aln_analysis_steps alignment_steps post_alignment_filtering_steps snp_calling_steps coverage_calc_steps pre_demog_steps annotate_steps
 
 # Hack to be able to export Make variables to child scripts
 # Don't export variables from make that begin with non-alphanumeric character
 # After that, underscores are OK
-MAKE_ENV := $(shell echo '$(.VARIABLES)' | awk -v RS=' ' '/^[a-zA-Z0-9][a-zA-Z0-9_]+$$/')
-SHELL_EXPORT := $(foreach v,$(MAKE_ENV),$(v)='$($(v))')
+# Also get rid of newlines.
+#MAKE_ENV := $(shell echo '$(.VARIABLES)' | awk -v RS=' ' '/^[a-zA-Z0-9][a-zA-Z0-9_]+$$/')
+#SHELL_EXPORT := $(foreach v,$(MAKE_ENV),$(v)='$($(v))')
+# Also get rid of newlines and module=() {  eval `/opt/Modules/bin/modulecmd bash `}
+#SHELL_EXPORT := $(shell echo ${SHELL_EXPORT} | tr '\n' ' ' | sed -e 's/module=.*\}//g' | sed -e 's/rm -f/"rm -f"/g')
+SHELL_EXPORT := 
+
+# Export Make variables to child scripts
+.EXPORT_ALL_VARIABLES :
 
 # ====================================================================================== #
 # -------------------------------------------------------------------------------------- #
@@ -246,10 +263,10 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.sam.bam.sorted.bam.bai : results/${I
 # Align stats report depends on the sorted BAM and scripts/get_alignment_stats.sh
 reports/${IND_ID}.bwa.human.aln_stats.txt : results/${IND_ID}.bwa.human.sam.bam.sorted.bam #scripts/get_alignment_stats.sh
 	@echo "# === Analyzing alignment output for human genome ============================= #";
-	${SHELL_EXPORT} ./scripts/get_alignment_stats.sh results/${IND_ID}.bwa.human.sam.bam.sorted.bam reports/${IND_ID}.bwa.${GENOME_CODE}.aln_stats.txt;
+	${SHELL_EXPORT} ./scripts/get_alignment_stats.sh results/${IND_ID}.bwa.human.sam.bam.sorted.bam reports/${IND_ID}.bwa.human.aln_stats.txt;
 reports/${IND_ID}.bwa.${SECOND_GENOME_NAME}.aln_stats.txt : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.sam.bam.sorted.bam #scripts/get_alignment_stats.sh
 	@echo "# === Analyzing alignment output for other genome ============================= #";
-	${SHELL_EXPORT} ./scripts/get_alignment_stats.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.sam.bam.sorted.bam reports/${IND_ID}.bwa.${GENOME_CODE}.aln_stats.txt	
+	${SHELL_EXPORT} ./scripts/get_alignment_stats.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.sam.bam.sorted.bam reports/${IND_ID}.bwa.${SECOND_GENOME_NAME}.aln_stats.txt	
 
 # ====================================================================================== #
 # -------------------------------------------------------------------------------------- #
@@ -338,11 +355,11 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.filtered.nodup.RG.bam : result
 # -------------------------------------------------------------------------------------- #
 
 # Filtered BAM depends on output BAM from add_read_groups.sh, BAMtools, and scripts/filter_mapped_reads_quality.sh
-results/${IND_ID}.bwa.human.passed.bam : results/${IND_ID}.bwa.human.fixed.filtered.nodup.RG.bam ${BEDTOOLS}/* # scripts/filter_mapped_reads_quality.sh
+results/${IND_ID}.bwa.human.passed.bam.bai : results/${IND_ID}.bwa.human.fixed.filtered.nodup.RG.bam ${BEDTOOLS}/* # scripts/filter_mapped_reads_quality.sh
 	@echo "# === Filtering low quality reads mapped to human genome ====================== #";
 	${SHELL_EXPORT} ./scripts/filter_mapped_reads_quality.sh human;
 	${SHELL_EXPORT} ./scripts/index_bam.sh results/${IND_ID}.bwa.human.passed.bam;
-results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.bam : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.filtered.nodup.RG.bam ${BEDTOOLS}/* # scripts/filter_mapped_reads_quality.sh
+results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.bam.bai : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.filtered.nodup.RG.bam ${BEDTOOLS}/* # scripts/filter_mapped_reads_quality.sh
 	@echo "# === Filtering low quality reads mapped to other genome ====================== #";
 	${SHELL_EXPORT} ./scripts/filter_mapped_reads_quality.sh ${SECOND_GENOME_NAME};
 	${SHELL_EXPORT} ./scripts/index_bam.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.bam;
@@ -555,48 +572,132 @@ reports/${IND_ID}.bwa.${SECOND_GENOME_NAME}.hsmetrics.txt : results/${IND_ID}.bw
 
 # fac_6
 
+	###	# ====================================================================================== #
+	###	# -------------------------------------------------------------------------------------- #
+	###	# --- Run PSMC to infer demographic history
+	###	# -------------------------------------------------------------------------------------- #
+	###	# ====================================================================================== #
+	###	
+	###	# -------------------------------------------------------------------------------------- #
+	###	# --- Convert FASTQ to PSMCFA
+	###	# -------------------------------------------------------------------------------------- #
+	###	
+	###	# PSMCFA file depends on consensus FASTQ, PSMC, and scripts/convert_to_psmcfa.sh
+	###	results/${IND_ID}.bwa.human.diploid.psmcfa : results/${IND_ID}.bwa.human.consensus.fq.gz ${PSMC}/* #scripts/convert_to_psmcfa.sh
+	###		@echo "# === Converting FASTQ to PSMCFA for human genome ============================= #";
+	###		${SHELL_EXPORT} ./scripts/convert_to_psmcfa.sh results/${IND_ID}.bwa.human.consensus.fq.gz;
+	###	results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.psmcfa : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.consensus.fq.gz ${PSMC}/* #scripts/convert_to_psmcfa.sh
+	###		@echo "# === Converting FASTQ to PSMCFA for other genome ============================= #";
+	###		${SHELL_EXPORT} ./scripts/convert_to_psmcfa.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.consensus.fq.gz;
+	###	
+	###	# -------------------------------------------------------------------------------------- #
+	###	# --- Run PSMC
+	###	# -------------------------------------------------------------------------------------- #
+	###	
+	###	# PSMC output file depends on PSMCFA file, PSMC, and scripts/run_psmc.sh
+	###	results/${IND_ID}.bwa.human.diploid.psmc : results/${IND_ID}.bwa.human.diploid.psmcfa ${PSMC}/* #scripts/run_psmc.sh
+	###		@echo "# === Running PSMC for consensus from human genome ============================ #";
+	###		${SHELL_EXPORT} ./scripts/run_psmc.sh results/${IND_ID}.bwa.human.diploid.psmcfa;
+	###	results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.psmc : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.psmcfa ${PSMC}/* #scripts/run_psmc.sh
+	###		@echo "# === Running PSMC for consensus from other genome ============================ #";
+	###		${SHELL_EXPORT} ./scripts/run_psmc.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.psmcfa;
+	###	
+	###	# -------------------------------------------------------------------------------------- #
+	###	# --- Call psmc2history.pl and Plot PSMC results
+	###	# -------------------------------------------------------------------------------------- #
+	###	
+	###	# PSMC plot file depends on PSMC file, PSMC, and scripts/psmc_to_ms_and_plot.sh
+	###	results/${IND_ID}.bwa.human.diploid.plot : results/${IND_ID}.bwa.human.diploid.psmc ${PSMC}/* #scripts/psmc_to_ms_and_plot.sh
+	###		@echo "# === Generating ms command and plot from PSMC for human genome =============== #";
+	###		${SHELL_EXPORT} ./scripts/psmc_to_ms_and_plot.sh results/${IND_ID}.bwa.human.diploid.psmc;
+	###	results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.plot : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.psmc ${PSMC}/* #scripts/psmc_to_ms_and_plot.sh
+	###		@echo "# === Generating ms command and plot from PSMC for other genome =============== #";
+	###		${SHELL_EXPORT} ./scripts/psmc_to_ms_and_plot.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.psmc;
+
 # ====================================================================================== #
 # -------------------------------------------------------------------------------------- #
-# --- Run PSMC to infer demographic history
+# --- Do individual processing in preparation to infer demographic history
 # -------------------------------------------------------------------------------------- #
 # ====================================================================================== #
 
 # -------------------------------------------------------------------------------------- #
-# --- Convert FASTQ to PSMCFA
+# --- Index SNPs with (not m!) pileup
 # -------------------------------------------------------------------------------------- #
 
-# PSMCFA file depends on consensus FASTQ, PSMC, and scripts/convert_to_psmcfa.sh
-results/${IND_ID}.bwa.human.diploid.psmcfa : results/${IND_ID}.bwa.human.consensus.fq.gz ${PSMC}/* #scripts/convert_to_psmcfa.sh
-	@echo "# === Converting FASTQ to PSMCFA for human genome ============================= #";
-	${SHELL_EXPORT} ./scripts/convert_to_psmcfa.sh results/${IND_ID}.bwa.human.consensus.fq.gz;
-results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.psmcfa : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.consensus.fq.gz ${PSMC}/* #scripts/convert_to_psmcfa.sh
-	@echo "# === Converting FASTQ to PSMCFA for other genome ============================= #";
-	${SHELL_EXPORT} ./scripts/convert_to_psmcfa.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.consensus.fq.gz;
+# SNPs pileup file depends on realigned BAM, SAMtools, and scripts/call_snps_pileup.sh
+results/${IND_ID}.bwa.human.passed.realn.pileup : results/${IND_ID}.bwa.human.passed.realn.bam #${SAMTOOLS}/* #scripts/call_snps_pileup.sh
+	@echo "# === Indexing raw SNPs relative to human genome ============================== #";
+	${SHELL_EXPORT} ./scripts/call_snps_pileup.sh results/${IND_ID}.bwa.human.passed.realn.bam ${HUMAN_GENOME_FA};
+results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.pileup : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam #${SAMTOOLS}/* #call_snps_pileup/call_snps.sh
+	@echo "# === Indexing raw SNPs relative to other genome ============================== #";
+	${SHELL_EXPORT} ./scripts/call_snps_pileup.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam ${SECOND_GENOME_FA};
 
 # -------------------------------------------------------------------------------------- #
-# --- Run PSMC
+# --- Call BSNP
 # -------------------------------------------------------------------------------------- #
 
-# PSMC output file depends on PSMCFA file, PSMC, and scripts/run_psmc.sh
-results/${IND_ID}.bwa.human.diploid.psmc : results/${IND_ID}.bwa.human.diploid.psmcfa ${PSMC}/* #scripts/run_psmc.sh
-	@echo "# === Running PSMC for consensus from human genome ============================ #";
-	${SHELL_EXPORT} ./scripts/run_psmc.sh results/${IND_ID}.bwa.human.diploid.psmcfa;
-results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.psmc : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.psmcfa ${PSMC}/* #scripts/run_psmc.sh
-	@echo "# === Running PSMC for consensus from other genome ============================ #";
-	${SHELL_EXPORT} ./scripts/run_psmc.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.psmcfa;
+# BSNP main output file depends on pileup output, BSNP, and scripts/call_bsnp.sh
+results/${IND_ID}.bwa.human.passed.realn.bsnp.snp.out : results/${IND_ID}.bwa.human.passed.realn.pileup #${BSNP}/* #scripts/call_bsnp.sh
+	@echo "# === Calling BSNP for SNPs relative to human genome ========================== #";
+	${SHELL_EXPORT} ./scripts/call_bsnp.sh results/${IND_ID}.bwa.human.passed.realn.pileup;
+results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.pileup #${BSNP}/* #scripts/call_bsnp.sh
+	@echo "# === Calling BSNP for SNPs relative to other genome ========================== #";
+	${SHELL_EXPORT} ./scripts/call_bsnp.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.pileup;
 
 # -------------------------------------------------------------------------------------- #
-# --- Call psmc2history.pl and Plot PSMC results
+# --- Filter BSNP-called SNPs with < 5 reads (second genome only)
 # -------------------------------------------------------------------------------------- #
 
-# PSMC plot file depends on PSMC file, PSMC, and scripts/psmc_to_ms_and_plot.sh
-results/${IND_ID}.bwa.human.diploid.plot : results/${IND_ID}.bwa.human.diploid.psmc ${PSMC}/* #scripts/psmc_to_ms_and_plot.sh
-	@echo "# === Generating ms command and plot from PSMC for human genome =============== #";
-	${SHELL_EXPORT} ./scripts/psmc_to_ms_and_plot.sh results/${IND_ID}.bwa.human.diploid.psmc;
-results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.plot : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.psmc ${PSMC}/* #scripts/psmc_to_ms_and_plot.sh
-	@echo "# === Generating ms command and plot from PSMC for other genome =============== #";
-	${SHELL_EXPORT} ./scripts/psmc_to_ms_and_plot.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.psmc;
+# Filtered BSNP file depends on original BSNP file
+results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4 : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out ./scripts/filter_bsnp.sh
+	@echo "# === Filtering BSNP-called SNPs with < 5 reads in 2nd genome only ============ #";
+	${SHELL_EXPORT} ./scripts/filter_bsnp.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out > results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4;
 
+# -------------------------------------------------------------------------------------- #
+# --- Write BED of contigs covered by 5 or more reads (second genome only)
+# -------------------------------------------------------------------------------------- #
 
+# BED of regions to analyze depends on the filtered BSNP file
+results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4.bed : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4 #scripts/bed_from_bsnp.pl
+	@echo "# === Writing BED of contigs covered 5+ reads in 2nd genome only ============ #";
+	${SHELL_EXPORT} perl scripts/bed_from_bsnp.pl results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4 > results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4.bed;
 
+# ====================================================================================== #
+# -------------------------------------------------------------------------------------- #
+# --- Annotate SNPs with ANNOVAR
+# -------------------------------------------------------------------------------------- #
+# ====================================================================================== #
 
+# -------------------------------------------------------------------------------------- #
+# --- Convert SNPs to ANNOVAR format
+# -------------------------------------------------------------------------------------- #
+
+# ANNOVAR formatted file depends on pileup formatted file
+results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.annonvar : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.pileup #${ANNOVAR}/convert2annovar.pl
+	@echo "# === Converting SNPs to ANNOVAR format in 2nd genome only ============ #";
+	${SHELL_EXPORT} ${ANNOVAR}/convert2annovar.pl results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.pileup;
+
+# -------------------------------------------------------------------------------------- #
+# --- Run ANNOVAR to annotate SNPs
+# -------------------------------------------------------------------------------------- #
+
+# ANNOVAR's exonic_variant_function output depends on ANNOVAR formatted file
+results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.annonvar.exonic_variant_function : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.annonvar #${ANNOVAR}/annotate_variation.pl
+	@echo "# === Running ANNOVAR to annotate SNPs in 2nd genome only ============ #";
+	${ANNOVAR}/annotate_variation.pl --buildver ${ANNOVAR_BUILDVER} results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.annovar ${ANNOVAR_DB_PATH};
+
+# ====================================================================================== #
+# -------------------------------------------------------------------------------------- #
+# --- Look for Runs of Homozygosity with plink
+# -------------------------------------------------------------------------------------- #
+# ====================================================================================== #
+
+# First convert to plink's PED format
+#~/exome_macaque/bin/vcftools_0.1.9/bin/vcftools --vcf results/george.bwa.rhesus.passed.realn.flt.vcf      --plink --out results/george.bwa.rhesus.passed.realn.flt
+
+# Then convert the PED to a binary PED file, and make FAM files, etc.
+# ~/exome_macaque/bin/plink-1.07-x86_64/plink --file results/george.bwa.rhesus.passed.realn.flt      --make-bed --out results/george.bwa.rhesus.passed.realn.flt
+
+# Then do ROH analysis in plink
+# Should be own script?
+#~/exome_macaque/bin/plink-1.07-x86_64/plink --bfile results/vallender.bwa.rhesus.passed.realn.flt   --homozyg-window-kb 1000 --homozyg-window-snp 50 --homozyg-window-het 1 --homozyg-window-missing 5 --homozyg-window-threshold 0.05 --homozyg-snp 5 --homozyg-kb 1 --allow-no-sex --out results/vallender.ROH

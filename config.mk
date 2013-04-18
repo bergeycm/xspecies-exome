@@ -9,7 +9,7 @@
 # -------------------------------------------------------------------------------------- #
 
 # Individual ID (used to name files)
-IND_ID=test_monkey
+IND_ID=george
 
 # Paths to input reads files
 # Must be in FASTQ format
@@ -40,6 +40,10 @@ CCDS=./targets/ccdsGene.hg19.4apr12.bed
 # http://hgdownload.cse.ucsc.edu/downloads.html
 CHAINFILE=/home/cmb433/exome_macaque/bin/liftover/hg19ToRheMac2.over.chain
 
+# Paths for ANNOVAR annotation
+ANNOVAR_BUILDVER=rheMac2
+ANNOVAR_DB_PATH=../rhesus_db/
+
 # -------------------------------------------------------------------------------------- #
 # --- Paths to external programs
 # -------------------------------------------------------------------------------------- #
@@ -48,6 +52,7 @@ FASTQC=/home/cmb433/exome_macaque/bin/FastQC
 FASTX=/home/cmb433/exome_macaque/bin/fastx
 BWA=/home/cmb433/exome_macaque/bin/bwa-0.6.2
 SAMTOOLS=/home/cmb433/exome_macaque/bin/samtools
+OLD_SAMTOOLS=/home/cmb433/exome_macaque/bin/samtools-0.1.16
 BEDTOOLS=/home/cmb433/exome_macaque/bin/BEDTools-Version-2.13.4/bin
 LIFTOVER=/home/cmb433/exome_macaque/bin/liftover
 PICARD=/home/cmb433/exome_macaque/bin/picard-tools-1.77
@@ -56,6 +61,8 @@ GATK=/home/cmb433/exome_macaque/bin/GATK
 BCFTOOLS=/home/cmb433/exome_macaque/bin/samtools/bcftools
 VCFTOOLS=/home/cmb433/exome_macaque/bin/vcftools_0.1.9/bin
 PSMC=/home/cmb433/exome_macaque/bin/psmc
+BSNP=/home/cmb433/exome_macaque/bin/BSNP/bin
+ANNOVAR=/home/cmb433/exome_macaque/bin/annovar/
 
 # -------------------------------------------------------------------------------------- #
 # --- Parameters for external programs
