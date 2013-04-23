@@ -59,6 +59,10 @@ bed_from_bsnp : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.sn
 # --- annotate_steps
 convert_annovar : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.annonvar
 annovar : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.annonvar.exonic_variant_function
+# --- roh_steps
+vcf_to_ped : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.ped
+binary_ped : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.ped.fam
+plink_roh : results/${IND_ID}.ROH.hom
 
 # Group steps together
 preliminary_steps : index_genome merge_beds liftover_beds
@@ -70,8 +74,9 @@ coverage_calc_steps : make_picard_intervals get_hsmetrics
 #psmc_steps : fastq_to_psmcfa psmc psmc_ms_plot
 pre_demog_steps : index_snps call_bsnp filter_bsnp bed_from_bsnp
 annotate_steps : convert_annovar annovar
+roh_steps : vcf_to_ped binary_ped plink_roh
 
-all : preliminary_steps pre_aln_analysis_steps alignment_steps post_alignment_filtering_steps snp_calling_steps coverage_calc_steps pre_demog_steps annotate_steps
+all : preliminary_steps pre_aln_analysis_steps alignment_steps post_alignment_filtering_steps snp_calling_steps coverage_calc_steps pre_demog_steps annotate_steps roh_steps
 
 # Hack to be able to export Make variables to child scripts
 # Don't export variables from make that begin with non-alphanumeric character
@@ -675,7 +680,7 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4.bed : 
 # ANNOVAR formatted file depends on pileup formatted file
 results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.annonvar : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.pileup #${ANNOVAR}/convert2annovar.pl
 	@echo "# === Converting SNPs to ANNOVAR format in 2nd genome only ============ #";
-	${SHELL_EXPORT} ${ANNOVAR}/convert2annovar.pl results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.pileup;
+	${SHELL_EXPORT} ${ANNOVAR}/convert2annovar.pl results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.pileup > results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.annovar;
 
 # -------------------------------------------------------------------------------------- #
 # --- Run ANNOVAR to annotate SNPs
@@ -692,12 +697,30 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.annonvar.exonic_variant
 # -------------------------------------------------------------------------------------- #
 # ====================================================================================== #
 
-# First convert to plink's PED format
-#~/exome_macaque/bin/vcftools_0.1.9/bin/vcftools --vcf results/george.bwa.rhesus.passed.realn.flt.vcf      --plink --out results/george.bwa.rhesus.passed.realn.flt
+# -------------------------------------------------------------------------------------- #
+# --- First convert to plink's PED format
+# -------------------------------------------------------------------------------------- #
 
-# Then convert the PED to a binary PED file, and make FAM files, etc.
-# ~/exome_macaque/bin/plink-1.07-x86_64/plink --file results/george.bwa.rhesus.passed.realn.flt      --make-bed --out results/george.bwa.rhesus.passed.realn.flt
+# plink PED file depends on VCF formated file and VCFtools 
+results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.ped : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.vcf #${VCFTOOLS}/*
+	@echo "# === Converting to plink format in 2nd genome only ============ #";
+	${VCFTOOLS}/vcftools --vcf results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.vcf --plink --out results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt;
 
-# Then do ROH analysis in plink
-# Should be own script?
-#~/exome_macaque/bin/plink-1.07-x86_64/plink --bfile results/vallender.bwa.rhesus.passed.realn.flt   --homozyg-window-kb 1000 --homozyg-window-snp 50 --homozyg-window-het 1 --homozyg-window-missing 5 --homozyg-window-threshold 0.05 --homozyg-snp 5 --homozyg-kb 1 --allow-no-sex --out results/vallender.ROH
+# -------------------------------------------------------------------------------------- #
+# --- Then convert the PED to a binary PED file, and make FAM files, etc.
+# -------------------------------------------------------------------------------------- #
+
+# plink FAM file depends on plink PED file and plink 
+results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.ped.fam : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.ped #${PLINK}/*
+	@echo "# === Converting to binary plink format in 2nd genome only ============ #";
+	${PLINK}/plink --file results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt --make-bed --out results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt;
+
+# -------------------------------------------------------------------------------------- #
+# --- Then do ROH analysis in plink
+# -------------------------------------------------------------------------------------- #
+
+# Should be own script, since there are a ton of parameters?
+# ROH output depends on plink FAM binary file and plink 
+results/${IND_ID}.ROH.hom : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.ped.fam #${PLINK}/*
+	@echo "# === Performing ROH analysis in 2nd genome only ============ #";
+	${PLINK}/plink --bfile results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt --homozyg-window-kb 1000 --homozyg-window-snp 50 --homozyg-window-het 1 --homozyg-window-missing 5 --homozyg-window-threshold 0.05 --homozyg-snp 5 --homozyg-kb 1 --allow-no-sex --out results/${IND_ID}.ROH

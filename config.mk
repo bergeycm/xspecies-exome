@@ -63,6 +63,7 @@ VCFTOOLS=/home/cmb433/exome_macaque/bin/vcftools_0.1.9/bin
 PSMC=/home/cmb433/exome_macaque/bin/psmc
 BSNP=/home/cmb433/exome_macaque/bin/BSNP/bin
 ANNOVAR=/home/cmb433/exome_macaque/bin/annovar/
+PLINK=/home/cmb433/exome_macaque/bin/plink-1.07-x86_64/
 
 # -------------------------------------------------------------------------------------- #
 # --- Parameters for external programs
