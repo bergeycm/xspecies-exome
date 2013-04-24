@@ -83,12 +83,13 @@ annotate_steps : convert_annovar annovar
 roh_steps : vcf_to_ped binary_ped plink_roh
 # Comparative steps
 pre_gphocs : intersect_indiv_beds make_gphocs_seq convert_to_nexus nj_tree
+gphocs : results/all.combined.gphocs.trace
 
 # Steps for individuals
 indiv : preliminary_steps pre_aln_analysis_steps alignment_steps post_alignment_filtering_steps snp_calling_steps coverage_calc_steps pre_demog_steps annotate_steps roh_steps
 
 # Steps for group
-compare : pre_gphocs
+compare : pre_gphocs gphocs
 
 # Hack to be able to export Make variables to child scripts
 # Don't export variables from make that begin with non-alphanumeric character
@@ -786,3 +787,16 @@ results/all.combined.gphocs.nex : results/all.combined.gphocs.seq #scripts/gphoc
 results/all.combined.gphocs.tre : results/all.combined.gphocs.nex #${PAUP}/*
 	@echo "# === Inferring NJ tree ======================================================= #";
 	${PAUP}/paup results/all.combined.gphocs.nex;
+
+# ====================================================================================== #
+# -------------------------------------------------------------------------------------- #
+# --- Call G-PhoCS after making sure seq filename, etc. is right in the control file
+# -------------------------------------------------------------------------------------- #
+# ====================================================================================== #
+
+# G-PhoCS trace output depends on G-PhoCS seq file and control file and G-PhoCS
+results/all.combined.gphocs.trace : results/all.combined.gphocs.seq $GPHOCS_CTL_FULL #${GPHOCS}/*
+	@echo "# === Calling G-PhoCS on full dataset ========================================= #";
+	${GPHOCS}/G-PhoCS-1-2-1 $GPHOCS_CTL_FULL
+
+

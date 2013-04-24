@@ -44,6 +44,10 @@ CHAINFILE=/home/cmb433/exome_macaque/bin/liftover/hg19ToRheMac2.over.chain
 ANNOVAR_BUILDVER=rheMac2
 ANNOVAR_DB_PATH=../rhesus_db/
 
+# Paths to G-PhoCS control files, full dataset and only untranscribed
+GPHOCS_CTL_FULL=macaque_exome_full_dataset.ctl
+GPHOCS_CTL_UNTR=macaque_exome_untranscribed.ctl
+
 # -------------------------------------------------------------------------------------- #
 # --- Paths to external programs
 # -------------------------------------------------------------------------------------- #
@@ -65,6 +69,7 @@ BSNP=/home/cmb433/exome_macaque/bin/BSNP/bin
 ANNOVAR=/home/cmb433/exome_macaque/bin/annovar/
 PLINK=/home/cmb433/exome_macaque/bin/plink-1.07-x86_64/
 PAUP=/scratch/disotell/bin/
+GPHOCS=/home/cmb433/exome_macaque/bin/G-PhoCS/bin/
 
 # -------------------------------------------------------------------------------------- #
 # --- Parameters for external programs
