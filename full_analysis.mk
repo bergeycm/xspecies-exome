@@ -63,8 +63,14 @@ annovar : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.annonvar.exon
 vcf_to_ped : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.ped
 binary_ped : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.ped.fam
 plink_roh : results/${IND_ID}.ROH.hom
+# --- pre_gphocs
+intersect_indiv_beds : results/all.bsnp.snp.out.gt4.large.bed
+make_gphocs_seq : results/all.combined.gphocs.seq
+convert_to_nexus : results/all.combined.gphocs.nex
+nj_tree : results/all.combined.gphocs.tre
 
 # Group steps together
+# Individual steps
 preliminary_steps : index_genome merge_beds liftover_beds
 pre_aln_analysis_steps : fastqc
 alignment_steps : align sampe sam2bam sort_and_index_bam get_alignment_stats
@@ -75,8 +81,14 @@ coverage_calc_steps : make_picard_intervals get_hsmetrics
 pre_demog_steps : index_snps call_bsnp filter_bsnp bed_from_bsnp
 annotate_steps : convert_annovar annovar
 roh_steps : vcf_to_ped binary_ped plink_roh
+# Comparative steps
+pre_gphocs : intersect_indiv_beds make_gphocs_seq convert_to_nexus nj_tree
 
-all : preliminary_steps pre_aln_analysis_steps alignment_steps post_alignment_filtering_steps snp_calling_steps coverage_calc_steps pre_demog_steps annotate_steps roh_steps
+# Steps for individuals
+indiv : preliminary_steps pre_aln_analysis_steps alignment_steps post_alignment_filtering_steps snp_calling_steps coverage_calc_steps pre_demog_steps annotate_steps roh_steps
+
+# Steps for group
+compare : pre_gphocs
 
 # Hack to be able to export Make variables to child scripts
 # Don't export variables from make that begin with non-alphanumeric character
@@ -724,3 +736,53 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.ped.fam : results/$
 results/${IND_ID}.ROH.hom : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.ped.fam #${PLINK}/*
 	@echo "# === Performing ROH analysis in 2nd genome only ============ #";
 	${PLINK}/plink --bfile results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt --homozyg-window-kb 1000 --homozyg-window-snp 50 --homozyg-window-het 1 --homozyg-window-missing 5 --homozyg-window-threshold 0.05 --homozyg-snp 5 --homozyg-kb 1 --allow-no-sex --out results/${IND_ID}.ROH
+
+# ====================================================================================== #
+# ====================================================================================== #
+# ============================= Comparative analyses below ============================= #
+# ====================================================================================== #
+# ====================================================================================== #
+
+# ====================================================================================== #
+# -------------------------------------------------------------------------------------- #
+# --- Intersect BEDs to get regions to include in G-PhoCS analysis (autosomal, >500 bp)
+# -------------------------------------------------------------------------------------- #
+# ====================================================================================== #
+
+# BED of regions to run depends on individual BED files, Perl script, and BEDtools
+results/all.bsnp.snp.out.gt4.large.bed : results/*.bwa.*.bsnp.snp.out.gt4.bed #scripts/intersect_bsnp_beds.pl ${BEDTOOLS}/*
+	@echo "# === Intersecting individual BEDs to get targets of G-PhoCS analysis ========= #";
+	perl scripts/intersect_bsnp_beds.pl;
+
+# ====================================================================================== #
+# -------------------------------------------------------------------------------------- #
+# --- Make FASTA of the seqs for G-PhoCS and combine them into G-PhoCS sequence file
+# -------------------------------------------------------------------------------------- #
+# ====================================================================================== #
+
+# G-PhoCS sequence file depends on big BED, BSNP files, and Perl scripts
+results/all.combined.gphocs.seq : results/all.bsnp.snp.out.gt4.large.bed results/*.bwa.*.bsnp.snp.out.gt4 #scripts/make_gphocs_seq_file.pl scripts/reduce_BSNP_via_BED scripts/bsnp_fastas_to_gphocs_seq_file
+	@echo "# === Making individual FASTAs and then combined G-PhoCS sequence file ======== #";
+	perl scripts/make_gphocs_seq_file.pl;
+
+# ====================================================================================== #
+# -------------------------------------------------------------------------------------- #
+# --- Convert G-PhoCS sequence file into a NEXUS file
+# -------------------------------------------------------------------------------------- #
+# ====================================================================================== #
+
+# NEXUS file depends on G-PhoCS sequence file and Perl script
+results/all.combined.gphocs.nex : results/all.combined.gphocs.seq #scripts/gphocs_to_nexus.pl
+	@echo "# === Converting G-PhoCS sequence file into a NEXUS file ====================== #";
+	perl scripts/gphocs_to_nexus.pl results/all.combined.gphocs.seq > results/all.combined.gphocs.nex
+
+# ====================================================================================== #
+# -------------------------------------------------------------------------------------- #
+# --- Infer NJ tree (results/all.combined.gphocs.tre)
+# -------------------------------------------------------------------------------------- #
+# ====================================================================================== #
+
+# NJ tree depends on NEXUS file and PAUP
+results/all.combined.gphocs.tre : results/all.combined.gphocs.nex #${PAUP}/*
+	@echo "# === Inferring NJ tree ======================================================= #";
+	${PAUP}/paup results/all.combined.gphocs.nex;

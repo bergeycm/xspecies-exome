@@ -64,6 +64,7 @@ PSMC=/home/cmb433/exome_macaque/bin/psmc
 BSNP=/home/cmb433/exome_macaque/bin/BSNP/bin
 ANNOVAR=/home/cmb433/exome_macaque/bin/annovar/
 PLINK=/home/cmb433/exome_macaque/bin/plink-1.07-x86_64/
+PAUP=/scratch/disotell/bin/
 
 # -------------------------------------------------------------------------------------- #
 # --- Parameters for external programs
