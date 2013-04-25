@@ -57,17 +57,19 @@ call_bsnp : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.ou
 filter_bsnp : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4
 bed_from_bsnp : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4.bed
 # --- annotate_steps
-convert_annovar : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.annonvar
-annovar : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.annonvar.exonic_variant_function
+convert_annovar : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.annovar
+annovar : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.annovar.exonic_variant_function
 # --- roh_steps
 vcf_to_ped : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.ped
-binary_ped : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.ped.fam
+binary_ped : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.fam
 plink_roh : results/${IND_ID}.ROH.hom
 # --- pre_gphocs
 intersect_indiv_beds : results/all.bsnp.snp.out.gt4.large.bed
 make_gphocs_seq : results/all.combined.gphocs.seq
 convert_to_nexus : results/all.combined.gphocs.nex
 nj_tree : results/all.combined.gphocs.tre
+# --- run_ghpocs
+run_gphocs : results/all.combined.gphocs.trace
 # --- untr_pre_gphocs
 get_untr_bed : results/all.combined.gphocs.seq.untranscribed.bed
 
@@ -85,14 +87,14 @@ annotate_steps : convert_annovar annovar
 roh_steps : vcf_to_ped binary_ped plink_roh
 # Comparative steps
 pre_gphocs : intersect_indiv_beds make_gphocs_seq convert_to_nexus nj_tree
-gphocs : results/all.combined.gphocs.trace
+run_gphocs : gphocs
 untr_pre_gphocs : get_untr_bed
 
 # Steps for individuals
 indiv : preliminary_steps pre_aln_analysis_steps alignment_steps post_alignment_filtering_steps snp_calling_steps coverage_calc_steps pre_demog_steps annotate_steps roh_steps
 
 # Steps for group
-compare : pre_gphocs gphocs untr_pre_gphocs
+compare : pre_gphocs run_gphocs untr_pre_gphocs
 
 # Hack to be able to export Make variables to child scripts
 # Don't export variables from make that begin with non-alphanumeric character
@@ -670,9 +672,9 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out : results/
 # -------------------------------------------------------------------------------------- #
 
 # Filtered BSNP file depends on original BSNP file
-results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4 : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out ./scripts/filter_bsnp.sh
+results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4 : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out #./scripts/filter_bsnp.sh
 	@echo "# === Filtering BSNP-called SNPs with < 5 reads in 2nd genome only ============ #";
-	touch results/standin.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4;
+	touch results/standin.bsnp.gt4;
 	${SHELL_EXPORT} ./scripts/filter_bsnp.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out > results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4;
 
 # -------------------------------------------------------------------------------------- #
@@ -682,7 +684,7 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4 : resu
 # BED of regions to analyze depends on the filtered BSNP file
 results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4.bed : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4 #scripts/bed_from_bsnp.pl
 	@echo "# === Writing BED of contigs covered 5+ reads in 2nd genome only ============ #";
-	touch results/standin.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4.bed;
+	touch results/standin.bsnp.gt4.bed;
 	${SHELL_EXPORT} perl scripts/bed_from_bsnp.pl results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4 > results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4.bed;
 
 # ====================================================================================== #
@@ -696,7 +698,7 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4.bed : 
 # -------------------------------------------------------------------------------------- #
 
 # ANNOVAR formatted file depends on pileup formatted file
-results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.annonvar : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.pileup #${ANNOVAR}/convert2annovar.pl
+results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.annovar : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.pileup #${ANNOVAR}/convert2annovar.pl
 	@echo "# === Converting SNPs to ANNOVAR format in 2nd genome only ============ #";
 	${SHELL_EXPORT} ${ANNOVAR}/convert2annovar.pl results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.pileup > results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.annovar;
 
@@ -705,7 +707,7 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.annonvar : results/${IN
 # -------------------------------------------------------------------------------------- #
 
 # ANNOVAR's exonic_variant_function output depends on ANNOVAR formatted file
-results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.annonvar.exonic_variant_function : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.annonvar #${ANNOVAR}/annotate_variation.pl
+results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.annovar.exonic_variant_function : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.annovar #${ANNOVAR}/annotate_variation.pl
 	@echo "# === Running ANNOVAR to annotate SNPs in 2nd genome only ============ #";
 	${ANNOVAR}/annotate_variation.pl --buildver ${ANNOVAR_BUILDVER} results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.annovar ${ANNOVAR_DB_PATH};
 
@@ -729,7 +731,7 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.ped : results/${IND
 # -------------------------------------------------------------------------------------- #
 
 # plink FAM file depends on plink PED file and plink 
-results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.ped.fam : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.ped #${PLINK}/*
+results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.fam : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.ped #${PLINK}/*
 	@echo "# === Converting to binary plink format in 2nd genome only ============ #";
 	${PLINK}/plink --file results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt --make-bed --out results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt;
 
@@ -739,7 +741,7 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.ped.fam : results/$
 
 # Should be own script, since there are a ton of parameters?
 # ROH output depends on plink FAM binary file and plink 
-results/${IND_ID}.ROH.hom : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.ped.fam #${PLINK}/*
+results/${IND_ID}.ROH.hom : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.fam #${PLINK}/*
 	@echo "# === Performing ROH analysis in 2nd genome only ============ #";
 	${PLINK}/plink --bfile results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt --homozyg-window-kb 1000 --homozyg-window-snp 50 --homozyg-window-het 1 --homozyg-window-missing 5 --homozyg-window-threshold 0.05 --homozyg-snp 5 --homozyg-kb 1 --allow-no-sex --out results/${IND_ID}.ROH
 
@@ -756,7 +758,7 @@ results/${IND_ID}.ROH.hom : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.r
 # ====================================================================================== #
 
 # BED of regions to run depends on individual BED files' stand-in, Perl script, and BEDtools
-results/all.bsnp.snp.out.gt4.large.bed : results/standin.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4.bed #scripts/intersect_bsnp_beds.pl ${BEDTOOLS}/*
+results/all.bsnp.snp.out.gt4.large.bed : results/standin.bsnp.gt4.bed #scripts/intersect_bsnp_beds.pl ${BEDTOOLS}/*
 	@echo "# === Intersecting individual BEDs to get targets of G-PhoCS analysis ========= #";
 	perl scripts/intersect_bsnp_beds.pl;
 
@@ -767,8 +769,8 @@ results/all.bsnp.snp.out.gt4.large.bed : results/standin.bwa.${SECOND_GENOME_NAM
 # ====================================================================================== #
 
 # G-PhoCS sequence file depends on big BED, BSNP files' stand-in, and Perl scripts
-results/all.combined.gphocs.seq : results/all.bsnp.snp.out.gt4.large.bed results/standin.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4 #scripts/make_gphocs_seq_file.pl scripts/reduce_BSNP_via_BED scripts/bsnp_fastas_to_gphocs_seq_file
-	@echo "# === Making individual FASTAs and then combined G-PhoCS sequence file ======== #";
+results/all.combined.gphocs.seq : results/all.bsnp.snp.out.gt4.large.bed results/standin.bsnp.gt4 #scripts/make_gphocs_seq_file.pl scripts/reduce_BSNP_via_BED scripts/bsnp_fastas_to_gphocs_seq_file
+	@echo "# === Making individual FASTAs and then combining into G-PhoCS sequence file == #";
 	perl scripts/make_gphocs_seq_file.pl;
 
 # ====================================================================================== #
@@ -818,3 +820,13 @@ results/all.combined.gphocs.seq.untranscribed.bed : results/all.combined.gphocs.
 	@echo "# === Making BED of untranscribed regions ===================================== #";
 	perl scripts/compare_seqs_to_refgene.pl
 
+# ====================================================================================== #
+# -------------------------------------------------------------------------------------- #
+# --- Make FASTA of untranscribed seqs and combine them into G-PhoCS sequence file
+# -------------------------------------------------------------------------------------- #
+# ====================================================================================== #
+
+# Untranscribed G-PhoCS sequence file depends on big (untr) BED, BSNP files' stand-in, and Perl scripts
+results/all.combined.gphocs.untranscribed.seq : results/all.combined.gphocs.seq.untranscribed.bed results/standin.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4 #scripts/make_gphocs_seq_file.pl scripts/reduce_BSNP_via_BED scripts/bsnp_fastas_to_gphocs_seq_file
+	@echo "# === Making indiv. untranscribed FASTAs and combining into G-PhoCS seq file == #";
+	perl scripts/make_gphocs_seq_file.pl untranscribed;
