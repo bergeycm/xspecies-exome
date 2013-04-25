@@ -68,10 +68,13 @@ intersect_indiv_beds : results/all.bsnp.snp.out.gt4.large.bed
 make_gphocs_seq : results/all.combined.gphocs.seq
 convert_to_nexus : results/all.combined.gphocs.nex
 nj_tree : results/all.combined.gphocs.tre
-# --- run_ghpocs
+# --- run_gphocs
 run_gphocs : results/all.combined.gphocs.trace
 # --- untr_pre_gphocs
 get_untr_bed : results/all.combined.gphocs.seq.untranscribed.bed
+make_gphocs_untr_seq : results/all.combined.gphocs.untranscribed.seq
+# --- run_gphocs_untr
+run_gphocs_untr : results/all.combined.gphocs.untranscribed.trace
 
 # Group steps together
 # Individual steps
@@ -87,14 +90,17 @@ annotate_steps : convert_annovar annovar
 roh_steps : vcf_to_ped binary_ped plink_roh
 # Comparative steps
 pre_gphocs : intersect_indiv_beds make_gphocs_seq convert_to_nexus nj_tree
-run_gphocs : gphocs
-untr_pre_gphocs : get_untr_bed
+gphocs : run_gphocs 
+untr_pre_gphocs : get_untr_bed make_gphocs_untr_seq
+gphocs_untr : run_gphocs_untr
 
 # Steps for individuals
 indiv : preliminary_steps pre_aln_analysis_steps alignment_steps post_alignment_filtering_steps snp_calling_steps coverage_calc_steps pre_demog_steps annotate_steps roh_steps
 
 # Steps for group
-compare : pre_gphocs run_gphocs untr_pre_gphocs
+# Note! G-PhoCS on the full and untranscribed datasets is not included in "group"
+# This is only because they take four days to run.
+compare : pre_gphocs untr_pre_gphocs # gphocs gphocs_untr
 
 # Hack to be able to export Make variables to child scripts
 # Don't export variables from make that begin with non-alphanumeric character
@@ -802,9 +808,9 @@ results/all.combined.gphocs.tre : results/all.combined.gphocs.nex #${PAUP}/*
 # ====================================================================================== #
 
 # G-PhoCS trace output depends on G-PhoCS seq file and control file and G-PhoCS
-results/all.combined.gphocs.trace : results/all.combined.gphocs.seq $GPHOCS_CTL_FULL #${GPHOCS}/*
+results/all.combined.gphocs.trace : results/all.combined.gphocs.seq ${GPHOCS_CTL_FULL} #${GPHOCS}/*
 	@echo "# === Calling G-PhoCS on full dataset ========================================= #";
-	${GPHOCS}/G-PhoCS-1-2-1 $GPHOCS_CTL_FULL
+	${GPHOCS}/G-PhoCS-1-2-1 ${GPHOCS_CTL_FULL}
 
 # ====================================================================================== #
 # -------------------------------------------------------------------------------------- #
@@ -827,6 +833,17 @@ results/all.combined.gphocs.seq.untranscribed.bed : results/all.combined.gphocs.
 # ====================================================================================== #
 
 # Untranscribed G-PhoCS sequence file depends on big (untr) BED, BSNP files' stand-in, and Perl scripts
-results/all.combined.gphocs.untranscribed.seq : results/all.combined.gphocs.seq.untranscribed.bed results/standin.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4 #scripts/make_gphocs_seq_file.pl scripts/reduce_BSNP_via_BED scripts/bsnp_fastas_to_gphocs_seq_file
+results/all.combined.gphocs.untranscribed.seq : results/all.combined.gphocs.seq.untranscribed.bed results/standin.bsnp.gt4 #scripts/make_gphocs_seq_file.pl scripts/reduce_BSNP_via_BED scripts/bsnp_fastas_to_gphocs_seq_file
 	@echo "# === Making indiv. untranscribed FASTAs and combining into G-PhoCS seq file == #";
 	perl scripts/make_gphocs_seq_file.pl untranscribed;
+
+# ====================================================================================== #
+# -------------------------------------------------------------------------------------- #
+# --- Call G-PhoCS on untranscribed after making sure all is right in the control file
+# -------------------------------------------------------------------------------------- #
+# ====================================================================================== #
+
+# Untr. G-PhoCS trace output depends on untr. G-PhoCS seq file and untr. control file and G-PhoCS
+results/all.combined.gphocs.untranscribed.trace : results/all.combined.gphocs.untranscribed.seq ${GPHOCS_CTL_UNTR} #${GPHOCS}/*
+	@echo "# === Calling G-PhoCS on untranscribed dataset ================================ #";
+	${GPHOCS}/G-PhoCS-1-2-1 ${GPHOCS_CTL_UNTR}
