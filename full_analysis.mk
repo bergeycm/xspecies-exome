@@ -68,6 +68,8 @@ intersect_indiv_beds : results/all.bsnp.snp.out.gt4.large.bed
 make_gphocs_seq : results/all.combined.gphocs.seq
 convert_to_nexus : results/all.combined.gphocs.nex
 nj_tree : results/all.combined.gphocs.tre
+# --- untr_pre_gphocs
+get_untr_bed : results/all.combined.gphocs.seq.untranscribed.bed
 
 # Group steps together
 # Individual steps
@@ -84,12 +86,13 @@ roh_steps : vcf_to_ped binary_ped plink_roh
 # Comparative steps
 pre_gphocs : intersect_indiv_beds make_gphocs_seq convert_to_nexus nj_tree
 gphocs : results/all.combined.gphocs.trace
+untr_pre_gphocs : get_untr_bed
 
 # Steps for individuals
 indiv : preliminary_steps pre_aln_analysis_steps alignment_steps post_alignment_filtering_steps snp_calling_steps coverage_calc_steps pre_demog_steps annotate_steps roh_steps
 
 # Steps for group
-compare : pre_gphocs gphocs
+compare : pre_gphocs gphocs untr_pre_gphocs
 
 # Hack to be able to export Make variables to child scripts
 # Don't export variables from make that begin with non-alphanumeric character
@@ -669,6 +672,7 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out : results/
 # Filtered BSNP file depends on original BSNP file
 results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4 : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out ./scripts/filter_bsnp.sh
 	@echo "# === Filtering BSNP-called SNPs with < 5 reads in 2nd genome only ============ #";
+	touch results/standin.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4;
 	${SHELL_EXPORT} ./scripts/filter_bsnp.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out > results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4;
 
 # -------------------------------------------------------------------------------------- #
@@ -678,6 +682,7 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4 : resu
 # BED of regions to analyze depends on the filtered BSNP file
 results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4.bed : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4 #scripts/bed_from_bsnp.pl
 	@echo "# === Writing BED of contigs covered 5+ reads in 2nd genome only ============ #";
+	touch results/standin.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4.bed;
 	${SHELL_EXPORT} perl scripts/bed_from_bsnp.pl results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4 > results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4.bed;
 
 # ====================================================================================== #
@@ -750,8 +755,8 @@ results/${IND_ID}.ROH.hom : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.r
 # -------------------------------------------------------------------------------------- #
 # ====================================================================================== #
 
-# BED of regions to run depends on individual BED files, Perl script, and BEDtools
-results/all.bsnp.snp.out.gt4.large.bed : results/*.bwa.*.bsnp.snp.out.gt4.bed #scripts/intersect_bsnp_beds.pl ${BEDTOOLS}/*
+# BED of regions to run depends on individual BED files' stand-in, Perl script, and BEDtools
+results/all.bsnp.snp.out.gt4.large.bed : results/standin.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4.bed #scripts/intersect_bsnp_beds.pl ${BEDTOOLS}/*
 	@echo "# === Intersecting individual BEDs to get targets of G-PhoCS analysis ========= #";
 	perl scripts/intersect_bsnp_beds.pl;
 
@@ -761,8 +766,8 @@ results/all.bsnp.snp.out.gt4.large.bed : results/*.bwa.*.bsnp.snp.out.gt4.bed #s
 # -------------------------------------------------------------------------------------- #
 # ====================================================================================== #
 
-# G-PhoCS sequence file depends on big BED, BSNP files, and Perl scripts
-results/all.combined.gphocs.seq : results/all.bsnp.snp.out.gt4.large.bed results/*.bwa.*.bsnp.snp.out.gt4 #scripts/make_gphocs_seq_file.pl scripts/reduce_BSNP_via_BED scripts/bsnp_fastas_to_gphocs_seq_file
+# G-PhoCS sequence file depends on big BED, BSNP files' stand-in, and Perl scripts
+results/all.combined.gphocs.seq : results/all.bsnp.snp.out.gt4.large.bed results/standin.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4 #scripts/make_gphocs_seq_file.pl scripts/reduce_BSNP_via_BED scripts/bsnp_fastas_to_gphocs_seq_file
 	@echo "# === Making individual FASTAs and then combined G-PhoCS sequence file ======== #";
 	perl scripts/make_gphocs_seq_file.pl;
 
@@ -799,4 +804,17 @@ results/all.combined.gphocs.trace : results/all.combined.gphocs.seq $GPHOCS_CTL_
 	@echo "# === Calling G-PhoCS on full dataset ========================================= #";
 	${GPHOCS}/G-PhoCS-1-2-1 $GPHOCS_CTL_FULL
 
+# ====================================================================================== #
+# -------------------------------------------------------------------------------------- #
+# --- Get BED of untranscribed regions, results/all.combined.gphocs.seq.untranscribed.bed
+# -------------------------------------------------------------------------------------- #
+# ====================================================================================== #
+
+# Note, this does A LOT more than just make a BED of the untranscribed stuff.
+# It also makes BEDs of transcribed stuff and generates alignments of exons
+
+# BED of untranscribed regions depends on G-PhoCS sequence file and refGene file
+results/all.combined.gphocs.seq.untranscribed.bed : results/all.combined.gphocs.seq ${REFGENE};
+	@echo "# === Making BED of untranscribed regions ===================================== #";
+	perl scripts/compare_seqs_to_refgene.pl
 

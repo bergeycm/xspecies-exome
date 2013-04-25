@@ -48,6 +48,9 @@ ANNOVAR_DB_PATH=../rhesus_db/
 GPHOCS_CTL_FULL=macaque_exome_full_dataset.ctl
 GPHOCS_CTL_UNTR=macaque_exome_untranscribed.ctl
 
+# Path to RefGene file
+REFGENE=../rhesus_db/rheMac2_refGene.txt
+
 # -------------------------------------------------------------------------------------- #
 # --- Paths to external programs
 # -------------------------------------------------------------------------------------- #
