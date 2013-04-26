@@ -12,6 +12,9 @@
 
 # Optionally pass "untranscribed" to only parse untranscribed regions
 my $only_untr = shift;
+if (!defined $only_untr) {
+	$only_untr = '';
+}
 chomp $only_untr;
 
 use strict;
