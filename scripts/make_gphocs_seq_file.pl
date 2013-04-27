@@ -24,7 +24,7 @@ my $bed_file = "results/all.bsnp.snp.out.gt4.large.bed";
 
 # If we're aiming for untranscibed regions, BED file changes to results/all.combined.gphocs.seq.untranscribed.bed
 if ($only_untr eq "untranscribed") {
-	my $bed_file = "results/all.combined.gphocs.seq.untranscribed.bed";
+	$bed_file = "results/all.combined.gphocs.seq.untranscribed.bed";
 }
 
 my @bsnp_files = <results/*.bwa.*.bsnp.snp.out.gt4>;
