@@ -54,10 +54,10 @@ my $combine_cmd = "perl scripts/bsnp_fastas_to_gphocs_seq_file.pl ";
 # If we're aiming for untranscibed regions, pass optional suffix, 
 # so the *.untranscribed file is read, not the default *.results
 if ($only_untr eq "untranscribed") {
-	$combine_cmd .= 'untranscribed ';
+	$combine_cmd .= 'untranscribed > results/all.combined.gphocs.untranscribed.seq;';
+} else {
+	$combine_cmd .= "> results/all.combined.gphocs.seq;";
 }
-
-$combine_cmd .= "> results/all.combined.gphocs.seq;";
 
 system ($combine_cmd);
 
