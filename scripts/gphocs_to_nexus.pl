@@ -62,7 +62,8 @@ print "End;\n";
 # Print PAUP block
 print "begin paup;\n";
 print "nj;\n";
-print "savetrees file=results/all.combined.gphocs.tre format=altnex brlens=yes replace;\n";
+#print "savetrees file=results/all.combined.gphocs.tre format=altnex brlens=yes replace;\n";
+print "savetrees format=altnex brlens=yes replace;\n";
 print "quit WARNTSAVE=No;\n";
 print "END;\n";
 

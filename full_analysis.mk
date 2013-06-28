@@ -35,8 +35,6 @@ filter_unmapped : results/${IND_ID}.bwa.human.fixed.filtered.bam.bai results/${I
 remove_dups : results/${IND_ID}.bwa.human.fixed.filtered.nodup.bam.bai results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.filtered.nodup.bam.bai reports/${IND_ID}.bwa.human.aln_stats.pairsfix.flt.nodup.txt reports/${IND_ID}.bwa.${SECOND_GENOME_NAME}.aln_stats.pairsfix.flt.nodup.txt
 add_read_groups : results/${IND_ID}.bwa.human.fixed.filtered.nodup.RG.bam results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.fixed.filtered.nodup.RG.bam
 filter_bad_qual : results/${IND_ID}.bwa.human.passed.bam.bai results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.bam.bai reports/${IND_ID}.bwa.human.aln_stats.passed.txt reports/${IND_ID}.bwa.${SECOND_GENOME_NAME}.aln_stats.passed.txt
-# --- abyss_steps
-
 # --- snp_calling_steps
 local_realign_targets : results/${IND_ID}.bwa.human.passed.bam.list results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.bam.list
 local_realign : results/${IND_ID}.bwa.human.passed.realn.bam results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam reports/${IND_ID}.bwa.human.aln_stats.passed.realn.txt reports/${IND_ID}.bwa.${SECOND_GENOME_NAME}.aln_stats.passed.realn.txt
@@ -47,10 +45,6 @@ call_consensus : results/${IND_ID}.bwa.human.consensus.fq.gz results/${IND_ID}.b
 # --- coverage_calc_steps
 make_picard_intervals : results/${IND_ID}.bwa.human.passed.realn.bam.picard.baits.bed results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam.picard.baits.bed
 get_hsmetrics : reports/${IND_ID}.bwa.human.hsmetrics.txt reports/${IND_ID}.bwa.${SECOND_GENOME_NAME}.hsmetrics.txt
-# --- psmc_steps
-#fastq_to_psmcfa : results/${IND_ID}.bwa.human.diploid.psmcfa results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.psmcfa
-#psmc : results/${IND_ID}.bwa.human.diploid.psmc results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.psmc
-#psmc_ms_plot : results/${IND_ID}.bwa.human.diploid.plot results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.plot
 # --- demog_steps
 index_snps : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.pileup
 call_bsnp : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out
@@ -73,10 +67,25 @@ run_gphocs : results/all.combined.gphocs.trace
 # --- untr_pre_gphocs
 get_untr_bed : results/all.combined.gphocs.seq.untranscribed.bed
 make_gphocs_untr_seq : results/all.combined.gphocs.untranscribed.seq
+convert_to_nexus_untr : results/all.combined.gphocs.untranscribed.nex
+nj_tree_untr : results/all.combined.gphocs.untranscribed.tre
 # --- run_gphocs_untr
 run_gphocs_untr : results/all.combined.gphocs.untranscribed.trace
+# --- filter_gphocs
+calc_tajima_d : results/tajimas_d_full.txt
+filter_1_5 : results/macaque_FULL.d1.5.seq
+filter_2_0 : results/macaque_FULL.d2.seq
+filter_2_5 : results/macaque_FULL.d2.5.seq
+filter_3_0 : results/macaque_FULL.d3.seq
+filter_5_0 : results/macaque_FULL.d5.seq
+run_gphocs_d1_5 : results/macaque_FULL.d1.5.trace.log
+run_gphocs_d2_0 : results/macaque_FULL.d2.trace.log
+run_gphocs_d2_5 : results/macaque_FULL.d2.5.trace.log
+run_gphocs_d3_0 : results/macaque_FULL.d3.trace.log
+run_gphocs_d5_0 : results/macaque_FULL.d5.trace.log
 
 # Group steps together
+
 # Individual steps
 preliminary_steps : index_genome merge_beds liftover_beds
 pre_aln_analysis_steps : fastqc
@@ -84,32 +93,28 @@ alignment_steps : align sampe sam2bam sort_and_index_bam get_alignment_stats
 post_alignment_filtering_steps : fix_mate_pairs filter_unmapped remove_dups add_read_groups filter_bad_qual
 snp_calling_steps : local_realign_targets local_realign call_snps filter_snps get_snp_stats call_consensus
 coverage_calc_steps : make_picard_intervals get_hsmetrics
-#psmc_steps : fastq_to_psmcfa psmc psmc_ms_plot
 pre_demog_steps : index_snps call_bsnp filter_bsnp bed_from_bsnp
 annotate_steps : convert_annovar annovar
 roh_steps : vcf_to_ped binary_ped plink_roh
+
 # Comparative steps
 pre_gphocs : intersect_indiv_beds make_gphocs_seq convert_to_nexus nj_tree
 gphocs : run_gphocs 
-untr_pre_gphocs : get_untr_bed make_gphocs_untr_seq
+untr_pre_gphocs : get_untr_bed make_gphocs_untr_seq convert_to_nexus_untr nj_tree_untr
 gphocs_untr : run_gphocs_untr
+filter_for_gphocs : calc_tajima_d filter_1_5 filter_2_0 filter_2_5 filter_3_0 filter_5_0 
+gphocs_filtered : run_gphocs_d1_5 run_gphocs_d2_0 run_gphocs_d2_5 run_gphocs_d3_0 run_gphocs_d5_0
 
 # Steps for individuals
 indiv : preliminary_steps pre_aln_analysis_steps alignment_steps post_alignment_filtering_steps snp_calling_steps coverage_calc_steps pre_demog_steps annotate_steps roh_steps
 
 # Steps for group
-# Note! G-PhoCS on the full and untranscribed datasets is not included in "group"
+# Note! G-PhoCS on the full, untranscribed, and filtered datasets is not included in "group"
 # This is only because they take four days to run.
-compare : pre_gphocs untr_pre_gphocs # gphocs gphocs_untr
+# Command to include them would be:
+compare_w_gphocs : pre_gphocs untr_pre_gphocs gphocs gphocs_untr filter_for_gphocs gphocs_filtered
+compare : pre_gphocs untr_pre_gphocs filter_for_gphocs
 
-# Hack to be able to export Make variables to child scripts
-# Don't export variables from make that begin with non-alphanumeric character
-# After that, underscores are OK
-# Also get rid of newlines.
-#MAKE_ENV := $(shell echo '$(.VARIABLES)' | awk -v RS=' ' '/^[a-zA-Z0-9][a-zA-Z0-9_]+$$/')
-#SHELL_EXPORT := $(foreach v,$(MAKE_ENV),$(v)='$($(v))')
-# Also get rid of newlines and module=() {  eval `/opt/Modules/bin/modulecmd bash `}
-#SHELL_EXPORT := $(shell echo ${SHELL_EXPORT} | tr '\n' ' ' | sed -e 's/module=.*\}//g' | sed -e 's/rm -f/"rm -f"/g')
 SHELL_EXPORT := 
 
 # Export Make variables to child scripts
@@ -186,18 +191,6 @@ ${CCDS}_2nd_liftover.bed_MERGED : ${BEDTOOLS}/* ${CCDS}_2nd_liftover.bed #script
 	${SHELL_EXPORT} ./scripts/merge_bed.sh ${CCDS}_2nd_liftover.bed;
 	${SHELL_EXPORT} ./scripts/merge_bed.sh ${CCDS}_hg_liftover.bed;
 
-# -------------------------------------------------------------------------------------- #
-# --- Get intersection of CCDS and targets
-# -------------------------------------------------------------------------------------- #
-
-# tr_2
-
-# -------------------------------------------------------------------------------------- #
-# --- Compute summary stats on targeted intervals, CCDS, and their intersection
-# -------------------------------------------------------------------------------------- #
-
-# tr_4
-
 # ====================================================================================== #
 # -------------------------------------------------------------------------------------- #
 # --- Analyze reads
@@ -216,13 +209,6 @@ reports/${IND_ID}.read2.stats.zip : ${READ2} ${FASTQC}/* #scripts/run_fastqc.sh
 	@echo "# === Analyzing quality of reads (2nd pair) before filtering ================== #";
 	${SHELL_EXPORT} ./scripts/run_fastqc.sh ${READ2} ${IND_ID}.read2.stats;
 	
-# -------------------------------------------------------------------------------------- #
-# --- [Optional] randomly subsample reads, if say you want to compare two different runs
-# -------------------------------------------------------------------------------------- #
-
-# bep_3
-# Call fastqc again
-
 # ====================================================================================== #
 # -------------------------------------------------------------------------------------- #
 # --- Mapping to reference genomes
@@ -403,13 +389,6 @@ reports/${IND_ID}.bwa.${SECOND_GENOME_NAME}.aln_stats.passed.txt : results/${IND
 
 # ====================================================================================== #
 # -------------------------------------------------------------------------------------- #
-# --- George ABySS methods (not itemized yet)
-# -------------------------------------------------------------------------------------- #
-# ====================================================================================== #
-
-
-# ====================================================================================== #
-# -------------------------------------------------------------------------------------- #
 # --- SNP calling methods
 # -------------------------------------------------------------------------------------- #
 # ====================================================================================== #
@@ -516,12 +495,6 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam.picard.baits.bed : 
 # --- Calculate coverage of targeted regions
 # -------------------------------------------------------------------------------------- #
 
-#java -Xmx10g -jar ${PICARD}/CalculateHsMetrics.jar \
-#	BAIT_INTERVALS=${IN_BAM}.picard.baits.bed \
-#	TARGET_INTERVALS=${IN_BAM}.picard.ccds.bed \
-#	INPUT=${IN_BAM} \
-#	OUTPUT=reports/${IND_ID}.bwa.${GENOME_NAME}.hsmetrics.txt
-
 # Picards HsMetrics output depends on realigned BAM, Picard-formatted BED files for targets and CCDS, Picard, and scripts/get_hsmetrics.sh
 reports/${IND_ID}.bwa.human.hsmetrics.txt : results/${IND_ID}.bwa.human.passed.realn.bam results/${IND_ID}.bwa.human.passed.realn.bam.picard.baits.bed results/${IND_ID}.bwa.human.passed.realn.bam.picard.ccds.bed ${PICARD}/* #scripts/get_hsmetrics.sh
 	@echo "# === Calculating coverage statistics with Picard HsMetrics for human genome == #";
@@ -529,119 +502,6 @@ reports/${IND_ID}.bwa.human.hsmetrics.txt : results/${IND_ID}.bwa.human.passed.r
 reports/${IND_ID}.bwa.${SECOND_GENOME_NAME}.hsmetrics.txt : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam.picard.baits.bed results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam.picard.ccds.bed ${PICARD}/* #scripts/get_hsmetrics.sh
 	@echo "# === Calculating coverage statistics with Picard HsMetrics for other genome == #";
 	${SHELL_EXPORT} ./scripts/get_hsmetrics.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bam ${SECOND_GENOME_NAME};
-
-
-# Old way:
-# cov_0_1
-
-# -------------------------------------------------------------------------------------- #
-# --- Extract Number of bases with greater than 1x coverage, target region lengths, and 
-# --- % coverages from coverageBed output
-# -------------------------------------------------------------------------------------- #
-
-# cov_0_1
-
-# -------------------------------------------------------------------------------------- #
-# --- Run coverageBed with histogram option
-# -------------------------------------------------------------------------------------- #
-
-# cov_0_2
-
-# -------------------------------------------------------------------------------------- #
-# --- Get simple percentage of target covered by at least one read
-# -------------------------------------------------------------------------------------- #
-
-# cov_1
-
-# -------------------------------------------------------------------------------------- #
-# --- Calculate avg coverage of intervals in CCDS
-# -------------------------------------------------------------------------------------- #
-
-# cov_2
-
-# -------------------------------------------------------------------------------------- #
-# --- Total target BP
-# --- Report percentage and count of target bp covered by at least N reads
-# --- Print bp count and percentage of target covered by N reads
-# --- Get average percent coverage of each interval
-# --- Average coverage of basepair in exome intervals
-# -------------------------------------------------------------------------------------- #
-
-# cov_2_1/summarize_covBed.R
-
-# -------------------------------------------------------------------------------------- #
-# For each sample, calculate number of targeted exons covered in their entirety
-# at a miminum of 5x 10x and 20x coverage. Make plot and table.
-# -------------------------------------------------------------------------------------- #
-
-# cov_3
-
-# ====================================================================================== #
-# -------------------------------------------------------------------------------------- #
-# --- Explore factors affecting coverage
-# -------------------------------------------------------------------------------------- #
-# ====================================================================================== #
-
-# -------------------------------------------------------------------------------------- #
-# --- Get FASTA of sequences from reference genome that overlap targets
-# -------------------------------------------------------------------------------------- #
-
-# get_targeted_seqs_from_genomes
-
-# -------------------------------------------------------------------------------------- #
-# --- Align with Muscle, get pairwise distance with PAUP, get GC%, get number of indels
-# -------------------------------------------------------------------------------------- #
-
-# compare_hg_rhe_seqs.pl
-
-# -------------------------------------------------------------------------------------- #
-# --- Build linear model (avg. coverage as response variable and pairwise distance, 
-# --- indels, exon length, GC\% as the predictors.
-# -------------------------------------------------------------------------------------- #
-
-# fac_6
-
-	###	# ====================================================================================== #
-	###	# -------------------------------------------------------------------------------------- #
-	###	# --- Run PSMC to infer demographic history
-	###	# -------------------------------------------------------------------------------------- #
-	###	# ====================================================================================== #
-	###	
-	###	# -------------------------------------------------------------------------------------- #
-	###	# --- Convert FASTQ to PSMCFA
-	###	# -------------------------------------------------------------------------------------- #
-	###	
-	###	# PSMCFA file depends on consensus FASTQ, PSMC, and scripts/convert_to_psmcfa.sh
-	###	results/${IND_ID}.bwa.human.diploid.psmcfa : results/${IND_ID}.bwa.human.consensus.fq.gz ${PSMC}/* #scripts/convert_to_psmcfa.sh
-	###		@echo "# === Converting FASTQ to PSMCFA for human genome ============================= #";
-	###		${SHELL_EXPORT} ./scripts/convert_to_psmcfa.sh results/${IND_ID}.bwa.human.consensus.fq.gz;
-	###	results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.psmcfa : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.consensus.fq.gz ${PSMC}/* #scripts/convert_to_psmcfa.sh
-	###		@echo "# === Converting FASTQ to PSMCFA for other genome ============================= #";
-	###		${SHELL_EXPORT} ./scripts/convert_to_psmcfa.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.consensus.fq.gz;
-	###	
-	###	# -------------------------------------------------------------------------------------- #
-	###	# --- Run PSMC
-	###	# -------------------------------------------------------------------------------------- #
-	###	
-	###	# PSMC output file depends on PSMCFA file, PSMC, and scripts/run_psmc.sh
-	###	results/${IND_ID}.bwa.human.diploid.psmc : results/${IND_ID}.bwa.human.diploid.psmcfa ${PSMC}/* #scripts/run_psmc.sh
-	###		@echo "# === Running PSMC for consensus from human genome ============================ #";
-	###		${SHELL_EXPORT} ./scripts/run_psmc.sh results/${IND_ID}.bwa.human.diploid.psmcfa;
-	###	results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.psmc : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.psmcfa ${PSMC}/* #scripts/run_psmc.sh
-	###		@echo "# === Running PSMC for consensus from other genome ============================ #";
-	###		${SHELL_EXPORT} ./scripts/run_psmc.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.psmcfa;
-	###	
-	###	# -------------------------------------------------------------------------------------- #
-	###	# --- Call psmc2history.pl and Plot PSMC results
-	###	# -------------------------------------------------------------------------------------- #
-	###	
-	###	# PSMC plot file depends on PSMC file, PSMC, and scripts/psmc_to_ms_and_plot.sh
-	###	results/${IND_ID}.bwa.human.diploid.plot : results/${IND_ID}.bwa.human.diploid.psmc ${PSMC}/* #scripts/psmc_to_ms_and_plot.sh
-	###		@echo "# === Generating ms command and plot from PSMC for human genome =============== #";
-	###		${SHELL_EXPORT} ./scripts/psmc_to_ms_and_plot.sh results/${IND_ID}.bwa.human.diploid.psmc;
-	###	results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.plot : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.psmc ${PSMC}/* #scripts/psmc_to_ms_and_plot.sh
-	###		@echo "# === Generating ms command and plot from PSMC for other genome =============== #";
-	###		${SHELL_EXPORT} ./scripts/psmc_to_ms_and_plot.sh results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.diploid.psmc;
 
 # ====================================================================================== #
 # -------------------------------------------------------------------------------------- #
@@ -705,7 +565,7 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.bsnp.snp.out.gt4.bed : 
 
 # ANNOVAR formatted file depends on pileup formatted file
 results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.annovar : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.pileup #${ANNOVAR}/convert2annovar.pl
-	@echo "# === Converting SNPs to ANNOVAR format in 2nd genome only ============ #";
+	@echo "# === Converting SNPs to ANNOVAR format in 2nd genome only ==================== #";
 	${SHELL_EXPORT} ${ANNOVAR}/convert2annovar.pl results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.pileup > results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.annovar;
 
 # -------------------------------------------------------------------------------------- #
@@ -714,7 +574,7 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.annovar : results/${IND
 
 # ANNOVAR's exonic_variant_function output depends on ANNOVAR formatted file
 results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.annovar.exonic_variant_function : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.annovar #${ANNOVAR}/annotate_variation.pl
-	@echo "# === Running ANNOVAR to annotate SNPs in 2nd genome only ============ #";
+	@echo "# === Running ANNOVAR to annotate SNPs in 2nd genome only ===================== #";
 	${ANNOVAR}/annotate_variation.pl --buildver ${ANNOVAR_BUILDVER} results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.annovar ${ANNOVAR_DB_PATH};
 
 # ====================================================================================== #
@@ -729,7 +589,7 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.annovar.exonic_variant_
 
 # plink PED file depends on VCF formated file and VCFtools 
 results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.ped : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.vcf #${VCFTOOLS}/*
-	@echo "# === Converting to plink format in 2nd genome only ============ #";
+	@echo "# === Converting to plink format in 2nd genome only =========================== #";
 	${VCFTOOLS}/vcftools --vcf results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.vcf --plink --out results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt;
 
 # -------------------------------------------------------------------------------------- #
@@ -738,7 +598,7 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.ped : results/${IND
 
 # plink FAM file depends on plink PED file and plink 
 results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.fam : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.ped #${PLINK}/*
-	@echo "# === Converting to binary plink format in 2nd genome only ============ #";
+	@echo "# === Converting to binary plink format in 2nd genome only ==================== #";
 	${PLINK}/plink --file results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt --make-bed --out results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt;
 
 # -------------------------------------------------------------------------------------- #
@@ -748,7 +608,7 @@ results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.fam : results/${IND
 # Should be own script, since there are a ton of parameters?
 # ROH output depends on plink FAM binary file and plink 
 results/${IND_ID}.ROH.hom : results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt.fam #${PLINK}/*
-	@echo "# === Performing ROH analysis in 2nd genome only ============ #";
+	@echo "# === Performing ROH analysis in 2nd genome only ============================== #";
 	${PLINK}/plink --bfile results/${IND_ID}.bwa.${SECOND_GENOME_NAME}.passed.realn.flt --homozyg-window-kb 1000 --homozyg-window-snp 50 --homozyg-window-het 1 --homozyg-window-missing 5 --homozyg-window-threshold 0.05 --homozyg-snp 5 --homozyg-kb 1 --allow-no-sex --out results/${IND_ID}.ROH
 
 # ====================================================================================== #
@@ -839,6 +699,28 @@ results/all.combined.gphocs.untranscribed.seq : results/all.combined.gphocs.seq.
 
 # ====================================================================================== #
 # -------------------------------------------------------------------------------------- #
+# --- Convert untranscribed G-PhoCS sequence file into a NEXUS file
+# -------------------------------------------------------------------------------------- #
+# ====================================================================================== #
+
+# NEXUS file depends on G-PhoCS sequence file and Perl script
+results/all.combined.gphocs.untranscribed.nex : results/all.combined.gphocs.untranscribed.seq #scripts/gphocs_to_nexus.pl
+	@echo "# === Converting untranscribed G-PhoCS sequence file into a NEXUS file ======== #";
+	perl scripts/gphocs_to_nexus.pl results/all.combined.gphocs.untranscribed.seq > results/all.combined.gphocs.untranscribed.nex
+
+# ====================================================================================== #
+# -------------------------------------------------------------------------------------- #
+# --- Infer untranscribed regions NJ tree (results/all.combined.gphocs.untranscribed.tre)
+# -------------------------------------------------------------------------------------- #
+# ====================================================================================== #
+
+# NJ tree depends on NEXUS file and PAUP
+results/all.combined.gphocs.untranscribed.tre : results/all.combined.gphocs.untranscribed.nex #${PAUP}/*
+	@echo "# === Inferring NJ tree for untranscribed regions ============================= #";
+	${PAUP}/paup results/all.combined.gphocs.untranscribed.nex;
+
+# ====================================================================================== #
+# -------------------------------------------------------------------------------------- #
 # --- Call G-PhoCS on untranscribed after making sure all is right in the control file
 # -------------------------------------------------------------------------------------- #
 # ====================================================================================== #
@@ -847,3 +729,90 @@ results/all.combined.gphocs.untranscribed.seq : results/all.combined.gphocs.seq.
 results/all.combined.gphocs.untranscribed.trace : results/all.combined.gphocs.untranscribed.seq ${GPHOCS_CTL_UNTR} #${GPHOCS}/*
 	@echo "# === Calling G-PhoCS on untranscribed dataset ================================ #";
 	${GPHOCS}/G-PhoCS-1-2-1 ${GPHOCS_CTL_UNTR}
+
+# ====================================================================================== #
+# -------------------------------------------------------------------------------------- #
+# --- Find Tajima's D for each G-PhoCS sequence
+# -------------------------------------------------------------------------------------- #
+# ====================================================================================== #
+
+# File of Tajima's D values depends on full G-PhoCS seq file, Perl script, and R script
+results/tajimas_d_full.txt : results/all.combined.gphocs.seq # scripts/find_selected_loci.pl scripts/calc_tajima_d.R
+	@echo "# === Calculating Tajima's D for all loci ===================================== #";
+	perl scripts/find_selected_loci.pl results/all.combined.gphocs.seq > results/tajimas_d_full.txt
+
+# ====================================================================================== #
+# -------------------------------------------------------------------------------------- #
+# --- Create filtered datasets by removing sequences with extreme Tajima's D values
+# -------------------------------------------------------------------------------------- #
+# ====================================================================================== #
+
+# Filtered sequence file depends on file of Tajima's D values, full G-PhoCS seq file, and Perl script
+# Filter: |D| < 1.5
+results/macaque_FULL.d1.5.seq : results/all.combined.gphocs.seq results/tajimas_d_full.txt # scripts/remove_tajima_d_outlier_seqs.pl
+	@echo "# === Filtering dataset |Tajima's D| < 1.5 ==================================== #";
+	perl scripts/remove_tajima_d_outlier_seqs.pl 1.5 > results/macaque_FULL.d1.5.seq
+	grep -c "chr" results/macaque_FULL.d1.5.seq > results/macaque_FULL.d1.5.seq.tmp
+	echo >> results/macaque_FULL.d1.5.seq.tmp
+	cat results/macaque_FULL.d1.5.seq >> results/macaque_FULL.d1.5.seq.tmp
+	cp results/macaque_FULL.d1.5.seq.tmp results/macaque_FULL.d1.5.seq
+	rm results/macaque_FULL.d1.5.seq.tmp
+# Filter: |D| < 2
+results/macaque_FULL.d2.seq : results/all.combined.gphocs.seq results/tajimas_d_full.txt # scripts/remove_tajima_d_outlier_seqs.pl
+	@echo "# === Filtering dataset |Tajima's D| < 2.0 ==================================== #";
+	perl scripts/remove_tajima_d_outlier_seqs.pl 2.0 > results/macaque_FULL.d2.seq
+	grep -c "chr" results/macaque_FULL.d2.seq > results/macaque_FULL.d2.seq.tmp
+	echo >> results/macaque_FULL.d2.seq.tmp
+	cat results/macaque_FULL.d2.seq >> results/macaque_FULL.d2.seq.tmp
+	cp results/macaque_FULL.d2.seq.tmp results/macaque_FULL.d2.seq
+	rm results/macaque_FULL.d2.seq.tmp
+# Filter: |D| < 2.5
+results/macaque_FULL.d2.5.seq : results/all.combined.gphocs.seq results/tajimas_d_full.txt # scripts/remove_tajima_d_outlier_seqs.pl
+	@echo "# === Filtering dataset |Tajima's D| < 2.5 ==================================== #";
+	perl scripts/remove_tajima_d_outlier_seqs.pl 2.5 > results/macaque_FULL.d2.5.seq
+	grep -c "chr" results/macaque_FULL.d2.5.seq > results/macaque_FULL.d2.5.seq.tmp
+	echo >> results/macaque_FULL.d2.5.seq.tmp
+	cat results/macaque_FULL.d2.5.seq >> results/macaque_FULL.d2.5.seq.tmp
+	cp results/macaque_FULL.d2.5.seq.tmp results/macaque_FULL.d2.5.seq
+	rm results/macaque_FULL.d2.5.seq.tmp
+# Filter: |D| < 3
+results/macaque_FULL.d3.seq : results/all.combined.gphocs.seq results/tajimas_d_full.txt # scripts/remove_tajima_d_outlier_seqs.pl
+	@echo "# === Filtering dataset |Tajima's D| < 3.0 ==================================== #";
+	perl scripts/remove_tajima_d_outlier_seqs.pl 3.0 > results/macaque_FULL.d3.seq
+	grep -c "chr" results/macaque_FULL.d3.seq > results/macaque_FULL.d3.seq.tmp
+	echo >> results/macaque_FULL.d3.seq.tmp
+	cat results/macaque_FULL.d3.seq >> results/macaque_FULL.d3.seq.tmp
+	cp results/macaque_FULL.d3.seq.tmp results/macaque_FULL.d3.seq
+	rm results/macaque_FULL.d3.seq.tmp
+# Filter: |D| < 5
+results/macaque_FULL.d5.seq : results/all.combined.gphocs.seq results/tajimas_d_full.txt # scripts/remove_tajima_d_outlier_seqs.pl
+	@echo "# === Filtering dataset |Tajima's D| < 5.0 ==================================== #";
+	perl scripts/remove_tajima_d_outlier_seqs.pl 5.0 > results/macaque_FULL.d5.seq
+	grep -c "chr" results/macaque_FULL.d5.seq > results/macaque_FULL.d5.seq.tmp
+	echo >> results/macaque_FULL.d5.seq.tmp
+	cat results/macaque_FULL.d5.seq >> results/macaque_FULL.d5.seq.tmp
+	cp results/macaque_FULL.d5.seq.tmp results/macaque_FULL.d5.seq
+	rm results/macaque_FULL.d5.seq.tmp
+
+# ====================================================================================== #
+# -------------------------------------------------------------------------------------- #
+# --- Call G-PhoCS on these filtered datasets
+# -------------------------------------------------------------------------------------- #
+# ====================================================================================== #
+
+# G-PhoCS trace output depends on filtered G-PhoCS seq file and control file and G-PhoCS
+results/macaque_FULL.d1.5.trace.log : results/macaque_FULL.d1.5.seq ${GPHOCS_CTL_1_5} #${GPHOCS}/*
+	@echo "# === Calling G-PhoCS on dataset |Tajima's D| < 1.5 =========================== #";
+	${GPHOCS}/G-PhoCS-1-2-1 ${GPHOCS_CTL_1_5}
+results/macaque_FULL.d2.trace.log : results/macaque_FULL.d2.seq ${GPHOCS_CTL_2_0} #${GPHOCS}/*
+	@echo "# === Calling G-PhoCS on dataset |Tajima's D| < 2.0 =========================== #";
+	${GPHOCS}/G-PhoCS-1-2-1 ${GPHOCS_CTL_2_0}
+results/macaque_FULL.d2.5.trace.log : results/macaque_FULL.d2.5.seq ${GPHOCS_CTL_2_5} #${GPHOCS}/*
+	@echo "# === Calling G-PhoCS on dataset |Tajima's D| < 2.5 =========================== #";
+	${GPHOCS}/G-PhoCS-1-2-1 ${GPHOCS_CTL_2_5}
+results/macaque_FULL.d3.trace.log : results/macaque_FULL.d3.seq ${GPHOCS_CTL_3_0} #${GPHOCS}/*
+	@echo "# === Calling G-PhoCS on dataset |Tajima's D| < 3.0 =========================== #";
+	${GPHOCS}/G-PhoCS-1-2-1 ${GPHOCS_CTL_3_0}
+results/macaque_FULL.d5.trace.log : results/macaque_FULL.d5.seq ${GPHOCS_CTL_5_0} #${GPHOCS}/*
+	@echo "# === Calling G-PhoCS on dataset |Tajima's D| < 5.0 =========================== #";
+	${GPHOCS}/G-PhoCS-1-2-1 ${GPHOCS_CTL_5_0}
