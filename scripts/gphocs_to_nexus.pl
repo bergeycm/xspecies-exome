@@ -1,70 +1,42 @@
 #!/usr/bin/perl
 
-use strict;
-use warnings;
+# Script to convert the G-PhoCS input file into a series of NEXUS files,
+# one per locus, for input into *BEAST
 
-use Data::Dumper;
+my $gphocs_in = "results/all.bsnp.snp.out.gt4.gphocs.seq.tmp";
 
-# ------------------------------------------------------------------------------
-# --- Convert G-PhoCS sequence file into a concatenated NEXUS file (so an 
-# --- NJ tree can be inferred in PAUP).
-# ------------------------------------------------------------------------------
+open (GPHOCS, "<$gphocs_in") 
+	or die "ERROR: Could not open G-PhoCS file for reading [$gphocs_in]\n";
 
-my $gphocs_input = shift;
-chomp $gphocs_input;
+open (OUT, ">/dev/null");
 
-# Loop through once to get loci count and nucleotide count
+foreach (<GPHOCS>) {
 
-open (GPHOCS, "<$gphocs_input")
-	or die "ERROR: Couldn't open G-PhoCS sequence file. $!\n";
-
-my $num_taxa;
-my $num_bp;
-
-while (<GPHOCS>) {
-	
-	# Test for header line
-	if (/^chr.+:(\d+)-(\d+) (\d+) \d+$/) {
-		$num_taxa = $3;
-		$num_bp += ($2 - $1) + 1;
+	if (/^chr/) {
+		my @info = split;
+		
+		# Print NEXUS footer
+		print OUT ";\nEND;\n";
+		
+		open (OUT, '>nexus_files/' . $info[0] . ".nex")
+			or die "ERROR: Could not open NEXUS file for writing " . $info[0] . ".nex\n";
+		
+		# Print NEXUS header
+		print OUT "#NEXUS\n";
+		print OUT "[" . $info[0] . "]\n";
+		print OUT "BEGIN DATA;\n";
+		print OUT "DIMENSIONS NTAX =" . $info[1] . " NCHAR=" . $info[2] . ";\n";
+		print OUT "FORMAT DATATYPE = DNA GAP = - MISSING = ?;\n";
+		print OUT "MATRIX\n";
+	} else {
+		print OUT $_;
 	}
 }
 
-close GPHOCS;
+# Print NEXUS footer for last NEXUS file
+print OUT ";\nEND;\n";
 
-# Print NEXUS header
-print "#NEXUS\n";
-print "Begin data;\n";
-print "Dimensions ntax=" . $num_taxa . " nchar=" . $num_bp . ";\n";
-print "Format datatype=dna symbols=\"ACGTRYSWKMBDHVN\" missing=? gap=- interleave;\n";
-print "Matrix\n";
-
-# Loop through again to output charset
-
-open (GPHOCS, "<$gphocs_input")
-	or die "ERROR: Couldn't open G-PhoCS sequence file. $!\n";
-
-while (<GPHOCS>) {
-
-	if (/^[\w\d]+\s+\w+$/) {
-		print $_;
-	} else {
-		print "\n";
-	}	
-}
-
-close GPHOCS;
-
-# Print matrix footer
-print ";\n";
-print "End;\n";
-
-# Print PAUP block
-print "begin paup;\n";
-print "nj;\n";
-#print "savetrees file=results/all.combined.gphocs.tre format=altnex brlens=yes replace;\n";
-print "savetrees format=altnex brlens=yes replace;\n";
-print "quit WARNTSAVE=No;\n";
-print "END;\n";
+close (GPHOCS);
 
 exit;
+
