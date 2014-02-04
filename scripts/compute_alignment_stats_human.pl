@@ -9,11 +9,14 @@ use Bio::PopGen::Utilities;
 use Bio::PopGen::Statistics;
 use Bio::AlignIO;
 
+my $fasta_in = shift;
+chomp $fasta_in;
+
 # ========================================================================================
 # --- Read in sequences
 # ========================================================================================
 
-my $in = Bio::AlignIO->new(	-file   => 'tmp.fa',
+my $in = Bio::AlignIO->new(	-file   => $fasta_in,
 							-format => 'fasta');
 
 my $aln = $in->next_aln;

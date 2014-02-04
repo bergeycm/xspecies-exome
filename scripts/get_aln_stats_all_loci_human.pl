@@ -9,6 +9,11 @@ chomp $gphocs_seq;
 open (SEQ, "<$gphocs_seq")
 	or die "ERROR: Could not open sequence file, $gphocs_seq. $!\n";
 
+my $out_file = $gphocs_seq;
+$out_file =~ s/\.seq/\.stats\.txt/g;
+open (OUT, ">$out_file")
+	or die "ERROR: Could not open output file, $out_file. $!\n";
+
 my $seq_hunk = '';
 
 my $num_seqs = <SEQ>;
@@ -17,11 +22,11 @@ chomp $num_seqs;
 my $total_sequence_count = 0;
 
 # Print header
-print "locus_id\tlocus_length\tgc_perc\t";
-print "all_pi\tall_theta\thuman_chimp_pi\tpi_per_site\t";
-print "ingroup_pi\tingroup_theta\tfu_li_d\tfu_li_d_star\t";
-print "fu_li_f\tfu_li_f_star\ttajima_d_human\tsingletons\t";
-print "segregating_sites\tancestral_mutations\tderived_mutations\n";
+print OUT "locus_id\tlocus_length\tgc_perc\t";
+print OUT "all_pi\tall_theta\thuman_chimp_pi\tpi_per_site\t";
+print OUT "ingroup_pi\tingroup_theta\tfu_li_d\tfu_li_d_star\t";
+print OUT "fu_li_f\tfu_li_f_star\ttajima_d_human\tsingletons\t";
+print OUT "segregating_sites\tancestral_mutations\tderived_mutations\n";
 	 
 foreach (<SEQ>) {
 
@@ -51,8 +56,11 @@ foreach (<SEQ>) {
 				# Print to temporary FASTA
 				my @fasta_seqs = split />/, $seq_hunk;
 				
-				open (TMP_FASTA, ">tmp.fa")
-					or die "ERROR: Could not open temporary FASTA file. $!\n";
+				my $fasta_filename = $gphocs_seq;
+				$fasta_filename =~ s/\.seq/\.tmp\.fa/g;
+				
+				open (TMP_FASTA, ">$fasta_filename")
+					or die "ERROR: Could not open temporary FASTA file [$fasta_filename]. $!\n";
 				
 				foreach my $sq (@fasta_seqs) {
 					my ($header, $sequence) = split /\n/, $sq;
@@ -65,7 +73,7 @@ foreach (<SEQ>) {
 				# --- Calculate alignment statistics with BioPerl script
 				# ========================================================================
 								
-				my $perl_cmd = "perl scripts/compute_alignment_stats.pl ";
+				my $perl_cmd = "perl scripts/compute_alignment_stats_human.pl $fasta_filename ";
 				my $perl_out_str = `$perl_cmd`;
 				
 				# Locus length
@@ -179,47 +187,47 @@ foreach (<SEQ>) {
 				# ------------------------------------------------------------------------
 											
 				# Print results
-				print $locus_id;
-				print "\t";
-				print $locus_length;
-				print "\t";
-				print $gc_perc;
-				print "\t";
+				print OUT $locus_id;
+				print OUT "\t";
+				print OUT $locus_length;
+				print OUT "\t";
+				print OUT $gc_perc;
+				print OUT "\t";
 
-				print $all_pi;
-				print "\t";
-				print $all_theta;
-				print "\t";
-				print $human_chimp_pi;
-				print "\t";
-				print $pi_per_site;
-				print "\t";
-				print $ingroup_pi;
-				print "\t";
-				print $ingroup_theta;
-				print "\t";
+				print OUT $all_pi;
+				print OUT "\t";
+				print OUT $all_theta;
+				print OUT "\t";
+				print OUT $human_chimp_pi;
+				print OUT "\t";
+				print OUT $pi_per_site;
+				print OUT "\t";
+				print OUT $ingroup_pi;
+				print OUT "\t";
+				print OUT $ingroup_theta;
+				print OUT "\t";
 
-				print $fu_li_d;
-				print "\t";
-				print $fu_li_d_star;
-				print "\t";
-				print $fu_li_f;
-				print "\t";
-				print $fu_li_f_star;
-				print "\t";
-				print $tajima_d_human;
-				print "\t";
+				print OUT $fu_li_d;
+				print OUT "\t";
+				print OUT $fu_li_d_star;
+				print OUT "\t";
+				print OUT $fu_li_f;
+				print OUT "\t";
+				print OUT $fu_li_f_star;
+				print OUT "\t";
+				print OUT $tajima_d_human;
+				print OUT "\t";
 
-				print $singletons;
-				print "\t";
-				print $segregating_sites;
-				print "\t";
-				print $ancestral_mutations;
-				print "\t";
-				print $derived_mutations;
-				print "\n";
+				print OUT $singletons;
+				print OUT "\t";
+				print OUT $segregating_sites;
+				print OUT "\t";
+				print OUT $ancestral_mutations;
+				print OUT "\t";
+				print OUT $derived_mutations;
+				print OUT "\n";
 				
-				system ("rm tmp.fa");
+				system ("rm $fasta_filename");
 				$total_sequence_count++;
 				### ----------------------------------------------------------------------
 			}
