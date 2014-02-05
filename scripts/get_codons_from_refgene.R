@@ -5,6 +5,9 @@
 
 refgene = read.table("hg18_refGene.txt")
 
+# Change settings to avoid use of exponential notation (e.g. 1.81e+08)
+options("scipen"=100, "digits"=4)
+
 get.codon.from.gene = function (rg, output = c("first", "second", "third", "unknown")) {
 
 	# Grab chromosome
