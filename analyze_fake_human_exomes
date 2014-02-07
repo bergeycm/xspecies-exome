@@ -1,0 +1,5 @@
+#!/bin/sh
+
+# Pipeline to generate and analyze fake human exomes is called as a make file. 
+
+make -s -f analyze_fake_human_exomes.mk all

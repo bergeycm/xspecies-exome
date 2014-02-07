@@ -21,7 +21,7 @@ READ2=./data/2012-12-03/macIll.read2.fastq
 
 # Paths to genomes files
 # Must be in FASTA format
-HUMAN_GENOME_FA=./genomes/hg19/hg19.fa
+HUMAN_GENOME_FA=./genomes/hg18/hg18.fa
 SECOND_GENOME_FA=./genomes/rheMac2/rheMac2.fa
 
 # Common name of secondary genome (used to name files)
@@ -39,6 +39,10 @@ CCDS=./targets/ccdsGene.hg19.4apr12.bed
 # Path to LiftOver Chain file for human-to-other genome. Available from:
 # http://hgdownload.cse.ucsc.edu/downloads.html
 CHAINFILE=/home/cmb433/exome_macaque/bin/liftover/hg19ToRheMac2.over.chain
+
+# Path to LiftOver Chain file for other genome-to-human genome. Available from:
+# http://hgdownload.cse.ucsc.edu/downloads.html
+TO_HUMAN_CHAINFILE=/home/cmb433/exome_macaque/bin/liftover/rheMac2ToHg18.over.chain
 
 # Paths for ANNOVAR annotation
 ANNOVAR_BUILDVER=rheMac2
