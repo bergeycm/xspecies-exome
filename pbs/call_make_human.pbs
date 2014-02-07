@@ -1,0 +1,28 @@
+#!/bin/bash
+
+#PBS -l nodes=1:ppn=8,walltime=12:00:00,mem=5GB
+#PBS -N xsp-ex_human
+#PBS -M cmb433@nyu.edu
+#PBS -m abe
+#PBS -e localhost:/scratch/cmb433/xspecies-exome/${PBS_JOBNAME}.e${PBS_JOBID}
+#PBS -o localhost:/scratch/cmb433/xspecies-exome/${PBS_JOBNAME}.o${PBS_JOBID}
+
+# ------------------------------------------------------------------------------
+# Variables
+# ------------------------------------------------------------------------------
+
+working_dir=/scratch/cmb433/xspecies-exome
+
+# ------------------------------------------------------------------------------
+# Run pipeline
+# ------------------------------------------------------------------------------
+
+cd $working_dir
+
+echo "Starting Make";
+
+make -f analyze_fake_human_exomes.mk all
+
+echo "Finished Make";
+
+exit;

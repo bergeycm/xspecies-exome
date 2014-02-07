@@ -25,13 +25,17 @@ clean_chimp_bed_full : data/gphocs_regions_human_full.noRandom.merged.panTro2.no
 clean_chimp_bed_untr : data/gphocs_regions_human_untr.noRandom.merged.panTro2.noRandom.bed
 grab_chimp_seq_full : data/panTro2_gphocs_targets.full.fa
 grab_chimp_seq_untr : data/panTro2_gphocs_targets.untr.fa
+# --- generate_exomes
+make_exomes_full : fake_human_exomes_full.seq 
+make_exomes_untr : fake_human_exomes_untr.seq
 
 # Group steps together
 
 prelim_grab_genome : liftover_bed_full liftover_bed_untr clean_bed_full clean_bed_untr merge_bed_full merge_bed_untr grab_genome_seq_full grab_genome_seq_untr 
 prelim_grab_chimp : liftover_to_chimp_full liftover_to_chimp_untr clean_chimp_bed_full clean_chimp_bed_untr grab_chimp_seq_full grab_chimp_seq_untr
+generate_exomes : make_exomes_full make_exomes_untr
 
-all : prelim_grab_genome prelim_grab_chimp
+all : prelim_grab_genome prelim_grab_chimp generate_exomes
 
 SHELL_EXPORT := 
 
@@ -40,7 +44,7 @@ SHELL_EXPORT :=
 
 # ====================================================================================== #
 # -------------------------------------------------------------------------------------- #
-# --- Generate fake human exome alignments
+# --- Preliminary steps to grab human genome sequences
 # -------------------------------------------------------------------------------------- #
 # ====================================================================================== #
 
@@ -116,6 +120,12 @@ data/hg18_gphocs_targets.untr.fa : data/gphocs_regions_human_untr.noRandom.merge
 	@echo "# === Making FASTA of genome sequences - Untranscribed dataset ================ #";
 	${BEDTOOLS}/fastaFromBed -fi ${HUMAN_GENOME_FA} -bed data/gphocs_regions_human_untr.noRandom.merged.bed -fo data/hg18_gphocs_targets.untr.fa
 
+# ====================================================================================== #
+# -------------------------------------------------------------------------------------- #
+# --- Preliminary steps to grab chimpanzee genome sequences
+# -------------------------------------------------------------------------------------- #
+# ====================================================================================== #
+
 # -------------------------------------------------------------------------------------- #
 # --- Convert human coordinates to chimp - Full dataset
 # -------------------------------------------------------------------------------------- #
@@ -170,3 +180,26 @@ data/panTro2_gphocs_targets.untr.fa : data/gphocs_regions_human_untr.noRandom.me
 	@echo "# === Making FASTA of chimp genome sequences - Untranscribed dataset ========== #";
 	${BEDTOOLS}/fastaFromBed -fi ${CHIMP_GENOME_FA} -bed data/gphocs_regions_human_untr.noRandom.merged.panTro2.noRandom.bed -fo data/panTro2_gphocs_targets.untr.fa
 
+# ====================================================================================== #
+# -------------------------------------------------------------------------------------- #
+# --- Generate fake human exome alignments
+# -------------------------------------------------------------------------------------- #
+# ====================================================================================== #
+
+# -------------------------------------------------------------------------------------- #
+# --- Make fake human exome seq file - Full dataset
+# -------------------------------------------------------------------------------------- #
+
+# Fake exome sequence file depends on human sequence FASTA, LiftOver, chain file, and chimp sequence FASTA
+fake_human_exomes_full.seq : data/hg18_gphocs_targets.full.fa ${LIFTOVER}/liftOver ${TO_CHIMP_CHAINFILE} data/panTro2_gphocs_targets.full.fa
+	@echo "# === Generating fake exomes - Full dataset =================================== #";
+	perl scripts/make_fake_human_exomes.pl --target_fasta data/hg18_gphocs_targets.full.fa --liftover_path ${LIFTOVER} --hg_to_pan_chain ${TO_CHIMP_CHAINFILE} --chimp_seqs_fasta data/panTro2_gphocs_targets.full.fa > fake_human_exomes_full.seq
+
+# -------------------------------------------------------------------------------------- #
+# --- Make fake human exome seq file - Untranscribed only
+# -------------------------------------------------------------------------------------- #
+
+# Fake exome sequence file depends on human sequence FASTA, LiftOver, chain file, and chimp sequence FASTA
+fake_human_exomes_untr.seq : data/hg18_gphocs_targets.untr.fa ${LIFTOVER}/liftOver ${TO_CHIMP_CHAINFILE} data/panTro2_gphocs_targets.untr.fa
+	@echo "# === Generating fake exomes - Untranscribed dataset ========================== #";
+	perl scripts/make_fake_human_exomes.pl --target_fasta data/hg18_gphocs_targets.untr.fa --liftover_path ${LIFTOVER} --hg_to_pan_chain ${TO_CHIMP_CHAINFILE} --chimp_seqs_fasta data/panTro2_gphocs_targets.untr.fa > fake_human_exomes_untr.seq
