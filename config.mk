@@ -23,6 +23,7 @@ READ2=./data/2012-12-03/macIll.read2.fastq
 # Must be in FASTA format
 HUMAN_GENOME_FA=./genomes/hg18/hg18.fa
 SECOND_GENOME_FA=./genomes/rheMac2/rheMac2.fa
+CHIMP_GENOME_FA=./genomes/panTro2/panTro2.fa
 
 # Common name of secondary genome (used to name files)
 SECOND_GENOME_NAME=rhesus
@@ -43,6 +44,10 @@ CHAINFILE=/home/cmb433/exome_macaque/bin/liftover/hg19ToRheMac2.over.chain
 # Path to LiftOver Chain file for other genome-to-human genome. Available from:
 # http://hgdownload.cse.ucsc.edu/downloads.html
 TO_HUMAN_CHAINFILE=/home/cmb433/exome_macaque/bin/liftover/rheMac2ToHg18.over.chain
+
+# Path to LiftOver Chain file for human-to-chimp genome. Available from:
+# http://hgdownload.cse.ucsc.edu/downloads.html
+TO_CHIMP_CHAINFILE=/home/cmb433/exome_macaque/bin/liftover/hg18ToPanTro2.over.chain
 
 # Paths for ANNOVAR annotation
 ANNOVAR_BUILDVER=rheMac2
