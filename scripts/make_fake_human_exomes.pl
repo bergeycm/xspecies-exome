@@ -16,10 +16,17 @@ my $liftover_path;
 my $hg_to_pan_chain;
 my $chimp_seqs_fasta;
 
+my $parallel_start = 0;	# Parallel mode: Optional start...
+my $parallel_end   = 0;	# ...and end for running this script on a subset of the sequences
+						# 1-based numbering, so start=1 and end=10 outputs the first
+						# ten sequences.
+
 my $result = GetOptions (	"target_fasta=s"		=> \$target_fasta,
 							"liftover_path=s"		=> \$liftover_path,
 							"hg_to_pan_chain=s"		=> \$hg_to_pan_chain,
 							"chimp_seqs_fasta=s"	=> \$chimp_seqs_fasta,
+							"start:i"				=> \$parallel_start,
+							"end:i"					=> \$parallel_end,
 							"verbose"				=> \$verbose )
 	or die "ERROR: Invalid commmand line options.\n";
 
@@ -39,7 +46,22 @@ my $tmp_bed = File::Temp->new(
 							SUFFIX   => '.bed',
 							);
 
+my $locus_counter = 0;
+
 LOCUS_LOOP: while (my $seq = $inseq->next_seq) {
+
+	$locus_counter++;
+	
+	# For running on a subset of the data
+	# Skip this locus if we're not to the target yet
+	if ($locus_counter < $parallel_start) {
+		next LOCUS_LOOP;
+	}
+	# Skip this locus if we're past the target
+	if ($parallel_end != 0 && $locus_counter > $parallel_end) {
+		next LOCUS_LOOP;
+	}
+
 	my $region_info = $seq->display_id;
 	my ($chr, $start, $end);
 	if ($region_info =~ /(chr[\w\d]+):(\d+)-(\d+)/) {

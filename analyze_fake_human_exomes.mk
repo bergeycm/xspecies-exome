@@ -190,6 +190,11 @@ data/panTro2_gphocs_targets.untr.fa : data/gphocs_regions_human_untr.noRandom.me
 # --- Make fake human exome seq file - Full dataset
 # -------------------------------------------------------------------------------------- #
 
+# Parallel version exists too. Call with:
+#  qsub -t 1-5017:100 pbs/make_exomes_full_parallel.pbs
+# Then recombine output with:
+#  cat `ls -v *full_parallel*.o*` > fake_human_exomes_full.seq
+
 # Fake exome sequence file depends on human sequence FASTA, LiftOver, chain file, and chimp sequence FASTA
 fake_human_exomes_full.seq : data/hg18_gphocs_targets.full.fa ${LIFTOVER}/liftOver ${TO_CHIMP_CHAINFILE} data/panTro2_gphocs_targets.full.fa
 	@echo "# === Generating fake exomes - Full dataset =================================== #";
@@ -199,7 +204,179 @@ fake_human_exomes_full.seq : data/hg18_gphocs_targets.full.fa ${LIFTOVER}/liftOv
 # --- Make fake human exome seq file - Untranscribed only
 # -------------------------------------------------------------------------------------- #
 
+# Parallel version exists too. Call with:
+# qsub -t 1-3698:100 pbs/make_exomes_untr_parallel.pbs
+# Then recombine output with:
+# cat `ls -v *untr_parallel*.o*` > fake_human_exomes_untr.seq
+
 # Fake exome sequence file depends on human sequence FASTA, LiftOver, chain file, and chimp sequence FASTA
 fake_human_exomes_untr.seq : data/hg18_gphocs_targets.untr.fa ${LIFTOVER}/liftOver ${TO_CHIMP_CHAINFILE} data/panTro2_gphocs_targets.untr.fa
 	@echo "# === Generating fake exomes - Untranscribed dataset ========================== #";
 	perl scripts/make_fake_human_exomes.pl --target_fasta data/hg18_gphocs_targets.untr.fa --liftover_path ${LIFTOVER} --hg_to_pan_chain ${TO_CHIMP_CHAINFILE} --chimp_seqs_fasta data/panTro2_gphocs_targets.untr.fa > fake_human_exomes_untr.seq
+
+# -------------------------------------------------------------------------------------- #
+# --- Reduce to autosomes - Full dataset
+# -------------------------------------------------------------------------------------- #
+
+# -------------------------------------------------------------------------------------- #
+# --- Reduce to autosomes - Untranscribed only
+# -------------------------------------------------------------------------------------- #
+
+
+# Manually get rid of chrY and chrX
+
+# -------------------------------------------------------------------------------------- #
+# --- Remove aberrant sequences (and one San) - Full dataset
+# -------------------------------------------------------------------------------------- #
+
+# -------------------------------------------------------------------------------------- #
+# --- Remove aberrant sequences (and one San) - Untranscribed only
+# -------------------------------------------------------------------------------------- #
+
+# Remove funky seqs, one of San
+# perl remove_missing_sequences.pl fake_human_exomes_FULL.seq > fake_human_exomes_FULL.filtered.seq
+
+# -------------------------------------------------------------------------------------- #
+# --- Mask CpG regions in sequences - Full dataset
+# -------------------------------------------------------------------------------------- #
+
+# -------------------------------------------------------------------------------------- #
+# --- Mask CpG regions in sequences - Untranscribed only
+# -------------------------------------------------------------------------------------- #
+
+
+# ====================================================================================== #
+# -------------------------------------------------------------------------------------- #
+# --- Compute various pop gen statistics
+# -------------------------------------------------------------------------------------- #
+# ====================================================================================== #
+
+# -------------------------------------------------------------------------------------- #
+# --- Compute pop gen stats for filtration
+# -------------------------------------------------------------------------------------- #
+
+# Just full dataset
+# perl scripts/get_aln_stats_all_loci_human.pl *.seq
+# Automatically makes *.stats.txt
+
+# ====================================================================================== #
+# -------------------------------------------------------------------------------------- #
+# --- Filter sequences
+# -------------------------------------------------------------------------------------- #
+# ====================================================================================== #
+
+# -------------------------------------------------------------------------------------- #
+# --- Filter sequences - NoNA
+# -------------------------------------------------------------------------------------- #
+
+# perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_FULL.filtered.CpGmasked.seq fake_human_exomes_FULL.filtered.CpGmasked.stats.txt tajima 100 > filtered/human.CpG.noNA.seq
+
+# -------------------------------------------------------------------------------------- #
+# --- Filter sequences - Tajima's D
+# -------------------------------------------------------------------------------------- #
+
+# perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_FULL.filtered.CpGmasked.seq fake_human_exomes_FULL.filtered.CpGmasked.stats.txt tajima 2 > filtered/human.CpG.taj.2.0.seq
+# perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_FULL.filtered.CpGmasked.seq fake_human_exomes_FULL.filtered.CpGmasked.stats.txt tajima 2.5 > filtered/human.CpG.taj.2.5.seq
+# perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_FULL.filtered.CpGmasked.seq fake_human_exomes_FULL.filtered.CpGmasked.stats.txt tajima 3 > filtered/human.CpG.taj.3.0.seq
+
+# -------------------------------------------------------------------------------------- #
+# --- Filter sequences - Fu & Li's D
+# -------------------------------------------------------------------------------------- #
+
+# perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_FULL.filtered.CpGmasked.seq fake_human_exomes_FULL.filtered.CpGmasked.stats.txt fuli 2 > filtered/human.CpG.fuli.2.0.seq
+# perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_FULL.filtered.CpGmasked.seq fake_human_exomes_FULL.filtered.CpGmasked.stats.txt fuli 2.5 > filtered/human.CpG.fuli.2.5.seq
+# perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_FULL.filtered.CpGmasked.seq fake_human_exomes_FULL.filtered.CpGmasked.stats.txt fuli 3 > filtered/human.CpG.fuli.3.0.seq
+
+# -------------------------------------------------------------------------------------- #
+# --- Filter sequences - Fu & Li's D*
+# -------------------------------------------------------------------------------------- #
+ 
+# perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_FULL.filtered.CpGmasked.seq fake_human_exomes_FULL.filtered.CpGmasked.stats.txt fuli_star 2 > filtered/human.CpG.fuli_star.2.0.seq
+# perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_FULL.filtered.CpGmasked.seq fake_human_exomes_FULL.filtered.CpGmasked.stats.txt fuli_star 2.5 > filtered/human.CpG.fuli_star.2.5.seq
+# perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_FULL.filtered.CpGmasked.seq fake_human_exomes_FULL.filtered.CpGmasked.stats.txt fuli_star 3 > filtered/human.CpG.fuli_star.3.0.seq
+
+# -------------------------------------------------------------------------------------- #
+# --- Filter sequences - GC percentage
+# -------------------------------------------------------------------------------------- #
+
+# perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_FULL.filtered.CpGmasked.seq fake_human_exomes_FULL.filtered.CpGmasked.stats.txt gc 0.5 > filtered/human.CpG.gc.50.seq
+# perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_FULL.filtered.CpGmasked.seq fake_human_exomes_FULL.filtered.CpGmasked.stats.txt gc 0.55 > filtered/human.CpG.gc.55.seq
+# perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_FULL.filtered.CpGmasked.seq fake_human_exomes_FULL.filtered.CpGmasked.stats.txt gc 0.6 > filtered/human.CpG.gc.60.seq
+
+# -------------------------------------------------------------------------------------- #
+# --- Fix header (with loci number) of all filtered seq files
+# -------------------------------------------------------------------------------------- #
+
+# -------------------------------------------------------------------------------------- #
+# --- Compute pop gen stats on filtered datasets
+# -------------------------------------------------------------------------------------- #
+
+# perl scripts/get_aln_stats_all_loci_human.pl *.seq
+# Automatically makes *.stats.txt
+
+# -------------------------------------------------------------------------------------- #
+# --- Compute mu for all seq files
+# -------------------------------------------------------------------------------------- #
+
+# Estimate mu as pi per site 
+# From each *.stats.txt, using estimate_mu_from_pi.R
+
+# ====================================================================================== #
+# -------------------------------------------------------------------------------------- #
+# --- Mask out CCDS regions
+# -------------------------------------------------------------------------------------- #
+# ====================================================================================== #
+
+# perl filter_gphocs_seq.pl fake_human_exomes_FULL.filtered.CpGmasked.seq ../xspecies-exome/targets/ccdsGene.hg19.4apr12.bed > fake_human_exomes_UNTR.filtered.CpGmasked.seq
+
+# perl remove_missing_sequences.pl fake_human_exomes_UNTR.CpGmasked.seq > fake_human_exomes_UNTR.CpGmasked.filtered.seq
+
+# Fix header
+
+# ====================================================================================== #
+# -------------------------------------------------------------------------------------- #
+# --- Mask by codon
+# -------------------------------------------------------------------------------------- #
+# ====================================================================================== #
+
+# Find codon locations with RefGene and get_codons_from_refgene.R
+
+# Get rid of anything with only one column:
+# awk -F'\t' '$2 != ""' hg18_refGene_codon1.bed > hg18_refGene_codon1.fixed.bed
+
+# Combine codons to get [1st and 2nd] and [1st, 2nd, and NA]
+
+# Sort with BEDtools’ sortBed
+
+# Mask by codon
+
+# ====================================================================================== #
+# -------------------------------------------------------------------------------------- #
+# --- Randomly subset neutral dataset
+# -------------------------------------------------------------------------------------- #
+# ====================================================================================== #
+
+# Use filtering_scripts/randomly_subset_seqs.pl
+
+# ====================================================================================== #
+# -------------------------------------------------------------------------------------- #
+# --- Run G-PhoCS (many, many times)
+# -------------------------------------------------------------------------------------- #
+# ====================================================================================== #
+
+# Make ctl file human_exome_FULL.ctl (and for untr)
+# and PBS file call_gphocs_FULL.pbs (and for untr)
+
+# Run G-PhoCS, twice for each
+
+# ====================================================================================== #
+# -------------------------------------------------------------------------------------- #
+# --- Analyze G-PhoCS output
+# -------------------------------------------------------------------------------------- #
+# ====================================================================================== #
+
+# Extract results
+
+# Scale results
+
+# Grab numbers for paper
