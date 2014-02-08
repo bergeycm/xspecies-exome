@@ -26,14 +26,18 @@ clean_chimp_bed_untr : data/gphocs_regions_human_untr.noRandom.merged.panTro2.no
 grab_chimp_seq_full : data/panTro2_gphocs_targets.full.fa
 grab_chimp_seq_untr : data/panTro2_gphocs_targets.untr.fa
 # --- generate_exomes
-make_exomes_full : fake_human_exomes_full.seq 
-make_exomes_untr : fake_human_exomes_untr.seq
+make_exomes_full : fake_human_exomes_full_all.seq 
+make_exomes_untr : fake_human_exomes_untr_all.seq
+autosomes_only_full : fake_human_exomes_full.seq
+autosomes_only_untr : fake_human_exomes_untr.seq
+filter_seq_full : fake_human_exomes_full.filtered.seq
+filter_seq_untr : fake_human_exomes_untr.filtered.seq
 
 # Group steps together
 
 prelim_grab_genome : liftover_bed_full liftover_bed_untr clean_bed_full clean_bed_untr merge_bed_full merge_bed_untr grab_genome_seq_full grab_genome_seq_untr 
 prelim_grab_chimp : liftover_to_chimp_full liftover_to_chimp_untr clean_chimp_bed_full clean_chimp_bed_untr grab_chimp_seq_full grab_chimp_seq_untr
-generate_exomes : make_exomes_full make_exomes_untr
+generate_exomes : make_exomes_full make_exomes_untr autosomes_only_full autosomes_only_untr filter_seq_full filter_seq_untr
 
 all : prelim_grab_genome prelim_grab_chimp generate_exomes
 
@@ -196,9 +200,9 @@ data/panTro2_gphocs_targets.untr.fa : data/gphocs_regions_human_untr.noRandom.me
 #  cat `ls -v *full_parallel*.o*` > fake_human_exomes_full.seq
 
 # Fake exome sequence file depends on human sequence FASTA, LiftOver, chain file, and chimp sequence FASTA
-fake_human_exomes_full.seq : data/hg18_gphocs_targets.full.fa ${LIFTOVER}/liftOver ${TO_CHIMP_CHAINFILE} data/panTro2_gphocs_targets.full.fa
+fake_human_exomes_full_all.seq : data/hg18_gphocs_targets.full.fa ${LIFTOVER}/liftOver ${TO_CHIMP_CHAINFILE} data/panTro2_gphocs_targets.full.fa
 	@echo "# === Generating fake exomes - Full dataset =================================== #";
-	perl scripts/make_fake_human_exomes.pl --target_fasta data/hg18_gphocs_targets.full.fa --liftover_path ${LIFTOVER} --hg_to_pan_chain ${TO_CHIMP_CHAINFILE} --chimp_seqs_fasta data/panTro2_gphocs_targets.full.fa > fake_human_exomes_full.seq
+	perl scripts/make_fake_human_exomes.pl --target_fasta data/hg18_gphocs_targets.full.fa --liftover_path ${LIFTOVER} --hg_to_pan_chain ${TO_CHIMP_CHAINFILE} --chimp_seqs_fasta data/panTro2_gphocs_targets.full.fa > fake_human_exomes_full_all.seq
 
 # -------------------------------------------------------------------------------------- #
 # --- Make fake human exome seq file - Untranscribed only
@@ -210,31 +214,51 @@ fake_human_exomes_full.seq : data/hg18_gphocs_targets.full.fa ${LIFTOVER}/liftOv
 # cat `ls -v *untr_parallel*.o*` > fake_human_exomes_untr.seq
 
 # Fake exome sequence file depends on human sequence FASTA, LiftOver, chain file, and chimp sequence FASTA
-fake_human_exomes_untr.seq : data/hg18_gphocs_targets.untr.fa ${LIFTOVER}/liftOver ${TO_CHIMP_CHAINFILE} data/panTro2_gphocs_targets.untr.fa
+fake_human_exomes_untr_all.seq : data/hg18_gphocs_targets.untr.fa ${LIFTOVER}/liftOver ${TO_CHIMP_CHAINFILE} data/panTro2_gphocs_targets.untr.fa
 	@echo "# === Generating fake exomes - Untranscribed dataset ========================== #";
-	perl scripts/make_fake_human_exomes.pl --target_fasta data/hg18_gphocs_targets.untr.fa --liftover_path ${LIFTOVER} --hg_to_pan_chain ${TO_CHIMP_CHAINFILE} --chimp_seqs_fasta data/panTro2_gphocs_targets.untr.fa > fake_human_exomes_untr.seq
+	perl scripts/make_fake_human_exomes.pl --target_fasta data/hg18_gphocs_targets.untr.fa --liftover_path ${LIFTOVER} --hg_to_pan_chain ${TO_CHIMP_CHAINFILE} --chimp_seqs_fasta data/panTro2_gphocs_targets.untr.fa > fake_human_exomes_untr_all.seq
 
 # -------------------------------------------------------------------------------------- #
 # --- Reduce to autosomes - Full dataset
 # -------------------------------------------------------------------------------------- #
 
+# Careful! This assumes there are 8 individuals per locus 
+# and thus nine lines between headers. This might not always be the case.
+
+# Reduced fake exome sequence file depends on seq file with autosomes
+fake_human_exomes_full.seq : fake_human_exomes_full_all.seq
+	@echo "# === Reduce to autosomes - Full dataset ====================================== #";
+	sed -e '/chrX/,+9d' -e '/chrY/,+9d' < fake_human_exomes_full_all.seq > fake_human_exomes_full.seq
+
 # -------------------------------------------------------------------------------------- #
 # --- Reduce to autosomes - Untranscribed only
 # -------------------------------------------------------------------------------------- #
 
+# Careful! This assumes there are 8 individuals per locus 
+# and thus nine lines between headers. This might not always be the case.
 
-# Manually get rid of chrY and chrX
+# Reduced fake exome sequence file depends on seq file with autosomes
+fake_human_exomes_untr.seq : fake_human_exomes_untr_all.seq
+	@echo "# === Reduce to autosomes - Untranscribed dataset ============================= #";
+	sed -e '/chrX/,+9d' -e '/chrY/,+9d' < fake_human_exomes_untr_all.seq > fake_human_exomes_untr.seq
 
 # -------------------------------------------------------------------------------------- #
 # --- Remove aberrant sequences (and one San) - Full dataset
 # -------------------------------------------------------------------------------------- #
 
+# Filtered sequence file depends on unfiltered seq file
+fake_human_exomes_full.filtered.seq : fake_human_exomes_full.seq
+	@echo "# === Filter seq file - Full dataset ========================================== #";
+	perl scripts/filter_seq_file.pl fake_human_exomes_full.seq > fake_human_exomes_full.filtered.seq
+
 # -------------------------------------------------------------------------------------- #
 # --- Remove aberrant sequences (and one San) - Untranscribed only
 # -------------------------------------------------------------------------------------- #
 
-# Remove funky seqs, one of San
-# perl remove_missing_sequences.pl fake_human_exomes_FULL.seq > fake_human_exomes_FULL.filtered.seq
+# Filtered sequence file depends on unfiltered seq file
+fake_human_exomes_untr.filtered.seq : fake_human_exomes_untr.seq
+	@echo "# === Filter seq file - Untranscribed dataset ================================= #";
+	perl scripts/filter_seq_file.pl fake_human_exomes_untr.seq > fake_human_exomes_untr.filtered.seq
 
 # -------------------------------------------------------------------------------------- #
 # --- Mask CpG regions in sequences - Full dataset
