@@ -32,12 +32,14 @@ autosomes_only_full : fake_human_exomes_full.seq
 autosomes_only_untr : fake_human_exomes_untr.seq
 filter_seq_full : fake_human_exomes_full.filtered.seq
 filter_seq_untr : fake_human_exomes_untr.filtered.seq
+mask_CpG_full : fake_human_exomes_full.filtered.CpGmasked.seq
+mask_CpG_untr : fake_human_exomes_untr.filtered.CpGmasked.seq
 
 # Group steps together
 
 prelim_grab_genome : liftover_bed_full liftover_bed_untr clean_bed_full clean_bed_untr merge_bed_full merge_bed_untr grab_genome_seq_full grab_genome_seq_untr 
 prelim_grab_chimp : liftover_to_chimp_full liftover_to_chimp_untr clean_chimp_bed_full clean_chimp_bed_untr grab_chimp_seq_full grab_chimp_seq_untr
-generate_exomes : make_exomes_full make_exomes_untr autosomes_only_full autosomes_only_untr filter_seq_full filter_seq_untr
+generate_exomes : make_exomes_full make_exomes_untr autosomes_only_full autosomes_only_untr filter_seq_full filter_seq_untr mask_CpG_full mask_CpG_untr
 
 all : prelim_grab_genome prelim_grab_chimp generate_exomes
 
@@ -280,10 +282,19 @@ fake_human_exomes_untr.filtered.seq : fake_human_exomes_untr.seq
 # --- Mask CpG regions in sequences - Full dataset
 # -------------------------------------------------------------------------------------- #
 
+# CpG masked sequence file depends on filtered sequence file
+fake_human_exomes_full.filtered.CpGmasked.seq : fake_human_exomes_full.filtered.seq
+	@echo "# === Masking CpG regions - Full dataset ====================================== #";
+	${SHELL_EXPORT} perl scripts/mask_gphocs_seq.pl fake_human_exomes_full.filtered.seq data/filter_CpG.bed > fake_human_exomes_full.filtered.CpGmasked.seq
+
 # -------------------------------------------------------------------------------------- #
 # --- Mask CpG regions in sequences - Untranscribed only
 # -------------------------------------------------------------------------------------- #
 
+# CpG masked sequence file depends on filtered sequence file
+fake_human_exomes_untr.filtered.CpGmasked.seq : fake_human_exomes_untr.filtered.seq
+	@echo "# === Masking CpG regions - Untranscribed dataset ============================= #";
+	${SHELL_EXPORT} perl scripts/mask_gphocs_seq.pl fake_human_exomes_untr.filtered.seq data/filter_CpG.bed > fake_human_exomes_untr.filtered.CpGmasked.seq
 
 # ====================================================================================== #
 # -------------------------------------------------------------------------------------- #
@@ -367,7 +378,7 @@ fake_human_exomes_untr.filtered.seq : fake_human_exomes_untr.seq
 # -------------------------------------------------------------------------------------- #
 # ====================================================================================== #
 
-# perl filter_gphocs_seq.pl fake_human_exomes_FULL.filtered.CpGmasked.seq ../xspecies-exome/targets/ccdsGene.hg19.4apr12.bed > fake_human_exomes_UNTR.filtered.CpGmasked.seq
+# perl mask_gphocs_seq.pl fake_human_exomes_FULL.filtered.CpGmasked.seq ../xspecies-exome/targets/ccdsGene.hg19.4apr12.bed > fake_human_exomes_UNTR.filtered.CpGmasked.seq
 
 # perl remove_missing_sequences.pl fake_human_exomes_UNTR.CpGmasked.seq > fake_human_exomes_UNTR.CpGmasked.filtered.seq
 

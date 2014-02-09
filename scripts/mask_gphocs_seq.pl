@@ -6,16 +6,14 @@ use warnings;
 # Script to mask out regions, such as CpG islands, from a G-PhoCS sequence file.
 # Input is seq file and BED of regions to be masked.
 
-# This hasn't really been tested. Use with caution!.
-
 my $in_seq = shift;
 my $in_bed = shift;
-my $start_locus = shift;	# 1 is first locus
-my $num_locus = shift;		# Number of loci to process
-chomp $num_locus;
+chomp $in_bed;
 
 print STDERR "Filtering out regions from $in_bed from $in_seq\n";
-print STDERR "Locus $start_locus and $num_locus loci after it.\n\n";
+
+defined ($in_bed)
+	or die "Usage: perl mask_gphocs_seq.pl [in.bed] [in.seq] > [out.seq]\n";
 
 open (SEQ, '<' . $in_seq)
 	or die "ERROR: Could not open sequence file.\n";
@@ -24,8 +22,6 @@ my $chr;
 my $start;
 my $end;
 
-my $locus_count = 0;
-
 while (my $line = <SEQ>) {
 
 	if ($line =~ /^\d+$/) {
@@ -33,15 +29,7 @@ while (my $line = <SEQ>) {
 		
 	} elsif ($line =~ /^chr/) {
 		
-		$locus_count++;
-		if ($locus_count < $start_locus) {
-			next;
-		} elsif ($locus_count >= ($start_locus + $num_locus)) {
-			exit;
-		}
-		
 		if ($line =~ /chr(\d+)_(\d+)_(\d+)/) {
-			
 			$chr = $1;
 			$start = $2;
 			$end = $3;
@@ -53,7 +41,7 @@ while (my $line = <SEQ>) {
 
 			# Find BED intervals that overlap
 			my $bedtools_cmd = "echo \"chr$chr\t$start\t$end\" | ";
-			$bedtools_cmd .= "~/exome_macaque/bin/BEDTools-Version-2.13.4/bin/intersectBed ";
+			$bedtools_cmd .= "$ENV{'BEDTOOLS'}/intersectBed ";
 			$bedtools_cmd .= "-sorted -a $in_bed -b stdin";
 			
 			my @mask_regions = `$bedtools_cmd`;

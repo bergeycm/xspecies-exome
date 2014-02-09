@@ -1,0 +1,39 @@
+#!/bin/bash
+
+#PBS -l nodes=1:ppn=8,walltime=5:00:00
+#PBS -N mask_CpG_untr_parallel
+#PBS -M cmb433@nyu.edu
+#PBS -m abe
+#PBS -e localhost:/scratch/cmb433/xspecies-exome/${PBS_JOBNAME}.e${PBS_JOBID}.${PBS_ARRAYID}
+#PBS -o localhost:/scratch/cmb433/xspecies-exome/${PBS_JOBNAME}.o${PBS_JOBID}.${PBS_ARRAYID}
+
+# ------------------------------------------------------------------------------
+# Variables
+# ------------------------------------------------------------------------------
+
+working_dir=/scratch/cmb433/xspecies-exome
+
+# ------------------------------------------------------------------------------
+# Run pipeline
+# ------------------------------------------------------------------------------
+
+cd $working_dir
+
+# There are 2401 sequences to run in the untr dataset
+# Call with:
+# qsub -t 1-2401:100 pbs/mask_CpG_untr_parallel.pbs
+
+# Then recombine output with:
+# cat `ls -v mask_CpG_untr_parallel*.o*` > fake_human_exomes_untr.filtered.CpGmasked.seq
+
+export BEDTOOLS=/home/cmb433/exome_macaque/bin/BEDTools-Version-2.13.4/bin
+
+TO_DO=100
+START=$PBS_ARRAYID
+
+perl scripts/mask_gphocs_seq_parallel.pl \
+	fake_human_exomes_untr.filtered.seq \
+	data/filter_CpG.bed \
+	$START $TO_DO
+
+exit;

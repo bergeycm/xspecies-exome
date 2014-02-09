@@ -8,9 +8,16 @@ use warnings;
 
 my $in_seq = shift;
 my $in_bed = shift;
-chomp $in_bed;
+my $start_locus = shift;	# 1 is first locus
+my $num_locus = shift;		# Number of loci to process
+chomp $num_locus;
 
 print STDERR "Filtering out regions from $in_bed from $in_seq\n";
+print STDERR "Locus $start_locus and " . ($num_locus - 1) . " loci after it ";
+print STDERR "for a total of $num_locus loci.\n\n";
+
+defined ($num_locus)
+	or die "Usage: perl mask_gphocs_seq.pl [in.bed] [in.seq] [start_locus_num] [end_locus_num] > [out.seq]\n";
 
 open (SEQ, '<' . $in_seq)
 	or die "ERROR: Could not open sequence file.\n";
@@ -19,14 +26,27 @@ my $chr;
 my $start;
 my $end;
 
+my $locus_count = 0;
+
 while (my $line = <SEQ>) {
 
 	if ($line =~ /^\d+$/) {
-		print $line;
+		# Only print header in parallel mode if we're on the first locus
+		if ($start_locus == 1) {
+			print $line;
+		}
 		
 	} elsif ($line =~ /^chr/) {
 		
+		$locus_count++;
+		if ($locus_count < $start_locus) {
+			next;
+		} elsif ($locus_count >= ($start_locus + $num_locus)) {
+			exit;
+		}
+		
 		if ($line =~ /chr(\d+)_(\d+)_(\d+)/) {
+			
 			$chr = $1;
 			$start = $2;
 			$end = $3;
@@ -38,7 +58,7 @@ while (my $line = <SEQ>) {
 
 			# Find BED intervals that overlap
 			my $bedtools_cmd = "echo \"chr$chr\t$start\t$end\" | ";
-			$bedtools_cmd .= "~/exome_macaque/bin/BEDTools-Version-2.13.4/bin/intersectBed ";
+			$bedtools_cmd .= "$ENV{'BEDTOOLS'}/intersectBed ";
 			$bedtools_cmd .= "-sorted -a $in_bed -b stdin";
 			
 			my @mask_regions = `$bedtools_cmd`;
