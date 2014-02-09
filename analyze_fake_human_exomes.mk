@@ -228,7 +228,11 @@ fake_human_exomes_untr_all.seq : data/hg18_gphocs_targets.untr.fa ${LIFTOVER}/li
 # Reduced fake exome sequence file depends on seq file with autosomes
 fake_human_exomes_full.seq : fake_human_exomes_full_all.seq
 	@echo "# === Reduce to autosomes - Full dataset ====================================== #";
-	sed -e '/chrX/,+9d' -e '/chrY/,+9d' < fake_human_exomes_full_all.seq > fake_human_exomes_full.seq
+	sed -e '/chrX/,+9d' -e '/chrY/,+9d' < fake_human_exomes_full_all.seq > fake_human_exomes_full_tmp.seq
+	grep -c "chr" fake_human_exomes_full_tmp.seq > fake_human_exomes_full_tmp.seq.count
+	cat fake_human_exomes_full_tmp.seq.count fake_human_exomes_full_tmp.seq > fake_human_exomes_full.seq
+	rm fake_human_exomes_full_tmp.seq
+	rm fake_human_exomes_full_tmp.seq.count
 
 # -------------------------------------------------------------------------------------- #
 # --- Reduce to autosomes - Untranscribed only
@@ -240,7 +244,11 @@ fake_human_exomes_full.seq : fake_human_exomes_full_all.seq
 # Reduced fake exome sequence file depends on seq file with autosomes
 fake_human_exomes_untr.seq : fake_human_exomes_untr_all.seq
 	@echo "# === Reduce to autosomes - Untranscribed dataset ============================= #";
-	sed -e '/chrX/,+9d' -e '/chrY/,+9d' < fake_human_exomes_untr_all.seq > fake_human_exomes_untr.seq
+	sed -e '/chrX/,+9d' -e '/chrY/,+9d' < fake_human_exomes_untr_all.seq > fake_human_exomes_untr_tmp.seq
+	grep -c "chr" fake_human_exomes_untr_tmp.seq > fake_human_exomes_untr_tmp.seq.count
+	cat fake_human_exomes_untr_tmp.seq.count fake_human_exomes_untr_tmp.seq > fake_human_exomes_untr.seq
+	rm fake_human_exomes_untr_tmp.seq
+	rm fake_human_exomes_untr_tmp.seq.count
 
 # -------------------------------------------------------------------------------------- #
 # --- Remove aberrant sequences (and one San) - Full dataset
@@ -249,7 +257,11 @@ fake_human_exomes_untr.seq : fake_human_exomes_untr_all.seq
 # Filtered sequence file depends on unfiltered seq file
 fake_human_exomes_full.filtered.seq : fake_human_exomes_full.seq
 	@echo "# === Filter seq file - Full dataset ========================================== #";
-	perl scripts/filter_seq_file.pl fake_human_exomes_full.seq > fake_human_exomes_full.filtered.seq
+	perl scripts/filter_seq_file.pl fake_human_exomes_full.seq > fake_human_exomes_full.filtered_tmp.seq
+	grep -c "chr" fake_human_exomes_full.filtered_tmp.seq > fake_human_exomes_full.filtered_tmp.seq.count
+	cat fake_human_exomes_full.filtered_tmp.seq.count fake_human_exomes_full.filtered_tmp.seq > fake_human_exomes_full.filtered.seq
+	rm fake_human_exomes_full.filtered_tmp.seq
+	rm fake_human_exomes_full.filtered_tmp.seq.count
 
 # -------------------------------------------------------------------------------------- #
 # --- Remove aberrant sequences (and one San) - Untranscribed only
@@ -258,7 +270,11 @@ fake_human_exomes_full.filtered.seq : fake_human_exomes_full.seq
 # Filtered sequence file depends on unfiltered seq file
 fake_human_exomes_untr.filtered.seq : fake_human_exomes_untr.seq
 	@echo "# === Filter seq file - Untranscribed dataset ================================= #";
-	perl scripts/filter_seq_file.pl fake_human_exomes_untr.seq > fake_human_exomes_untr.filtered.seq
+	perl scripts/filter_seq_file.pl fake_human_exomes_untr.seq > fake_human_exomes_untr.filtered_tmp.seq
+	grep -c "chr" fake_human_exomes_untr.filtered_tmp.seq > fake_human_exomes_untr.filtered_tmp.seq.count
+	cat fake_human_exomes_untr.filtered_tmp.seq.count fake_human_exomes_untr.filtered_tmp.seq > fake_human_exomes_untr.filtered.seq
+	rm fake_human_exomes_untr.filtered_tmp.seq
+	rm fake_human_exomes_untr.filtered_tmp.seq.count
 
 # -------------------------------------------------------------------------------------- #
 # --- Mask CpG regions in sequences - Full dataset
