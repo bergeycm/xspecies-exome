@@ -34,14 +34,17 @@ filter_seq_full : fake_human_exomes_full.filtered.seq
 filter_seq_untr : fake_human_exomes_untr.filtered.seq
 mask_CpG_full : fake_human_exomes_full.filtered.CpGmasked.seq
 mask_CpG_untr : fake_human_exomes_untr.filtered.CpGmasked.seq
+# --- filter_seqs
+get_stats_pre_filter : fake_human_exomes_full.filtered.CpGmasked.stats.txt
 
 # Group steps together
 
 prelim_grab_genome : liftover_bed_full liftover_bed_untr clean_bed_full clean_bed_untr merge_bed_full merge_bed_untr grab_genome_seq_full grab_genome_seq_untr 
 prelim_grab_chimp : liftover_to_chimp_full liftover_to_chimp_untr clean_chimp_bed_full clean_chimp_bed_untr grab_chimp_seq_full grab_chimp_seq_untr
 generate_exomes : make_exomes_full make_exomes_untr autosomes_only_full autosomes_only_untr filter_seq_full filter_seq_untr mask_CpG_full mask_CpG_untr
+filter_seqs : get_stats_pre_filter
 
-all : prelim_grab_genome prelim_grab_chimp generate_exomes
+all : prelim_grab_genome prelim_grab_chimp generate_exomes filter_seqs
 
 SHELL_EXPORT := 
 
@@ -282,6 +285,11 @@ fake_human_exomes_untr.filtered.seq : fake_human_exomes_untr.seq
 # --- Mask CpG regions in sequences - Full dataset
 # -------------------------------------------------------------------------------------- #
 
+# Parallel version exists too. Call with:
+# qsub -t 1-3349:100 pbs/mask_CpG_full_parallel.pbs
+# Then recombine output with:
+# cat `ls -v mask_CpG_full_parallel*.o*` > fake_human_exomes_full.filtered.CpGmasked.seq
+
 # CpG masked sequence file depends on filtered sequence file
 fake_human_exomes_full.filtered.CpGmasked.seq : fake_human_exomes_full.filtered.seq
 	@echo "# === Masking CpG regions - Full dataset ====================================== #";
@@ -291,6 +299,11 @@ fake_human_exomes_full.filtered.CpGmasked.seq : fake_human_exomes_full.filtered.
 # --- Mask CpG regions in sequences - Untranscribed only
 # -------------------------------------------------------------------------------------- #
 
+# Parallel version exists too. Call with:
+# qsub -t 1-2401:100 pbs/mask_CpG_untr_parallel.pbs
+# Then recombine output with:
+# cat `ls -v mask_CpG_untr_parallel*.o*` > fake_human_exomes_untr.filtered.CpGmasked.seq
+
 # CpG masked sequence file depends on filtered sequence file
 fake_human_exomes_untr.filtered.CpGmasked.seq : fake_human_exomes_untr.filtered.seq
 	@echo "# === Masking CpG regions - Untranscribed dataset ============================= #";
@@ -298,23 +311,18 @@ fake_human_exomes_untr.filtered.CpGmasked.seq : fake_human_exomes_untr.filtered.
 
 # ====================================================================================== #
 # -------------------------------------------------------------------------------------- #
-# --- Compute various pop gen statistics
-# -------------------------------------------------------------------------------------- #
-# ====================================================================================== #
-
-# -------------------------------------------------------------------------------------- #
-# --- Compute pop gen stats for filtration
-# -------------------------------------------------------------------------------------- #
-
-# Just full dataset
-# perl scripts/get_aln_stats_all_loci_human.pl *.seq
-# Automatically makes *.stats.txt
-
-# ====================================================================================== #
-# -------------------------------------------------------------------------------------- #
 # --- Filter sequences
 # -------------------------------------------------------------------------------------- #
 # ====================================================================================== #
+
+# -------------------------------------------------------------------------------------- #
+# --- Compute pop gen stats for filtration - Full dataset
+# -------------------------------------------------------------------------------------- #
+
+# Stats file depends on CpG-masked sequence file
+fake_human_exomes_full.filtered.CpGmasked.stats.txt : fake_human_exomes_full.filtered.CpGmasked.seq
+	@echo "# === Computing pop gen stats - Full dataset ================================== #";
+	perl scripts/get_aln_stats_all_loci_human.pl fake_human_exomes_full.filtered.CpGmasked.seq
 
 # -------------------------------------------------------------------------------------- #
 # --- Filter sequences - NoNA
