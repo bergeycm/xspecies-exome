@@ -92,7 +92,7 @@ while (my $seq_line = <SEQ>) {
 				$this_stat  = $gc_all{$seq_locus};
 			}
 			
-			if (abs($this_stat) < abs($stat_cutoff)) {
+			if ($this_stat ne "NA" && abs($this_stat) < abs($stat_cutoff)) {
 				#while ($seq_line !~ /^vallender/) {
 				while ($seq_line !~ /^chimp/) {
 					print $seq_line;

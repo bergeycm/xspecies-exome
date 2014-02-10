@@ -36,13 +36,18 @@ mask_CpG_full : fake_human_exomes_full.filtered.CpGmasked.seq
 mask_CpG_untr : fake_human_exomes_untr.filtered.CpGmasked.seq
 # --- filter_seqs
 get_stats_pre_filter : fake_human_exomes_full.filtered.CpGmasked.stats.txt
+filter_noNA : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.noNA.seq
+filter_taj : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.2.0.seq filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.2.5.seq filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.3.0.seq
+filter_fuli : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.2.0.seq filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.2.5.seq filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.3.0.seq
+filter_fuli_star : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.2.0.seq filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.2.5.seq filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.3.0.seq
+filter_gc : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.50.seq filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.55.seq filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.60.seq
 
 # Group steps together
 
 prelim_grab_genome : liftover_bed_full liftover_bed_untr clean_bed_full clean_bed_untr merge_bed_full merge_bed_untr grab_genome_seq_full grab_genome_seq_untr 
 prelim_grab_chimp : liftover_to_chimp_full liftover_to_chimp_untr clean_chimp_bed_full clean_chimp_bed_untr grab_chimp_seq_full grab_chimp_seq_untr
 generate_exomes : make_exomes_full make_exomes_untr autosomes_only_full autosomes_only_untr filter_seq_full filter_seq_untr mask_CpG_full mask_CpG_untr
-filter_seqs : get_stats_pre_filter
+filter_seqs : get_stats_pre_filter filter_noNA filter_taj filter_fuli filter_fuli_star filter_gc
 
 all : prelim_grab_genome prelim_grab_chimp generate_exomes filter_seqs
 
@@ -328,43 +333,117 @@ fake_human_exomes_full.filtered.CpGmasked.stats.txt : fake_human_exomes_full.fil
 # --- Filter sequences - NoNA
 # -------------------------------------------------------------------------------------- #
 
-# perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_FULL.filtered.CpGmasked.seq fake_human_exomes_FULL.filtered.CpGmasked.stats.txt tajima 100 > filtered/human.CpG.noNA.seq
+# noNA filtered seq file depends on original CpG-masked sequence file and stats file
+filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.noNA.seq : fake_human_exomes_full.filtered.CpGmasked.seq fake_human_exomes_full.filtered.CpGmasked.stats.txt
+	@echo "# === Filtering loci - Removing NA sequences ================================== #";
+	perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_full.filtered.CpGmasked.seq fake_human_exomes_full.filtered.CpGmasked.stats.txt tajima 100 > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.noNA.tmp.seq
+	grep -c "chr" filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.noNA.tmp.seq > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.noNA.tmp.seq.count
+	cat filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.noNA.tmp.seq.count filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.noNA.tmp.seq > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.noNA.seq
+	rm filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.noNA.tmp.seq*
 
 # -------------------------------------------------------------------------------------- #
 # --- Filter sequences - Tajima's D
 # -------------------------------------------------------------------------------------- #
 
-# perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_FULL.filtered.CpGmasked.seq fake_human_exomes_FULL.filtered.CpGmasked.stats.txt tajima 2 > filtered/human.CpG.taj.2.0.seq
-# perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_FULL.filtered.CpGmasked.seq fake_human_exomes_FULL.filtered.CpGmasked.stats.txt tajima 2.5 > filtered/human.CpG.taj.2.5.seq
-# perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_FULL.filtered.CpGmasked.seq fake_human_exomes_FULL.filtered.CpGmasked.stats.txt tajima 3 > filtered/human.CpG.taj.3.0.seq
+# Tajima's D filtered seq files depend on original CpG-masked sequence file and stats file
+filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.2.0.seq : fake_human_exomes_full.filtered.CpGmasked.seq fake_human_exomes_full.filtered.CpGmasked.stats.txt
+	@echo "# === Filtering loci - Removing |Tajima's D| > 2.0 sequences ================== #";
+	perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_full.filtered.CpGmasked.seq fake_human_exomes_full.filtered.CpGmasked.stats.txt tajima 2.0 > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.2.0.tmp.seq
+	grep -c "chr" filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.2.0.tmp.seq > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.2.0.tmp.seq.count
+	cat filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.2.0.tmp.seq.count filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.2.0.tmp.seq > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.2.0.seq
+	rm filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.2.0.tmp.seq*
+
+filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.2.5.seq : fake_human_exomes_full.filtered.CpGmasked.seq fake_human_exomes_full.filtered.CpGmasked.stats.txt
+	@echo "# === Filtering loci - Removing |Tajima's D| > 2.5 sequences ================== #";
+	perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_full.filtered.CpGmasked.seq fake_human_exomes_full.filtered.CpGmasked.stats.txt tajima 2.5 > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.2.5.tmp.seq
+	grep -c "chr" filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.2.5.tmp.seq > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.2.5.tmp.seq.count
+	cat filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.2.5.tmp.seq.count filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.2.5.tmp.seq > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.2.5.seq
+	rm filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.2.5.tmp.seq*
+
+filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.3.0.seq : fake_human_exomes_full.filtered.CpGmasked.seq fake_human_exomes_full.filtered.CpGmasked.stats.txt
+	@echo "# === Filtering loci - Removing |Tajima's D| > 3.0 sequences ================== #";
+	perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_full.filtered.CpGmasked.seq fake_human_exomes_full.filtered.CpGmasked.stats.txt tajima 3.0 > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.3.0.tmp.seq
+	grep -c "chr" filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.3.0.tmp.seq > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.3.0.tmp.seq.count
+	cat filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.3.0.tmp.seq.count filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.3.0.tmp.seq > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.3.0.seq
+	rm filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.3.0.tmp.seq*
 
 # -------------------------------------------------------------------------------------- #
 # --- Filter sequences - Fu & Li's D
 # -------------------------------------------------------------------------------------- #
 
-# perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_FULL.filtered.CpGmasked.seq fake_human_exomes_FULL.filtered.CpGmasked.stats.txt fuli 2 > filtered/human.CpG.fuli.2.0.seq
-# perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_FULL.filtered.CpGmasked.seq fake_human_exomes_FULL.filtered.CpGmasked.stats.txt fuli 2.5 > filtered/human.CpG.fuli.2.5.seq
-# perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_FULL.filtered.CpGmasked.seq fake_human_exomes_FULL.filtered.CpGmasked.stats.txt fuli 3 > filtered/human.CpG.fuli.3.0.seq
+# Fu & Li's D filtered seq files depend on original CpG-masked sequence file and stats file
+filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.2.0.seq : fake_human_exomes_full.filtered.CpGmasked.seq fake_human_exomes_full.filtered.CpGmasked.stats.txt
+	@echo "# === Filtering loci - Removing |Fu & Li's D| > 2.0 sequences ================= #";
+	perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_full.filtered.CpGmasked.seq fake_human_exomes_full.filtered.CpGmasked.stats.txt fuli 2.0 > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.2.0.tmp.seq
+	grep -c "chr" filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.2.0.tmp.seq > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.2.0.tmp.seq.count
+	cat filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.2.0.tmp.seq.count filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.2.0.tmp.seq > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.2.0.seq
+	rm filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.2.0.tmp.seq*
+	
+filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.2.5.seq : fake_human_exomes_full.filtered.CpGmasked.seq fake_human_exomes_full.filtered.CpGmasked.stats.txt
+	@echo "# === Filtering loci - Removing |Fu & Li's D| > 2.5 sequences ================= #";
+	perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_full.filtered.CpGmasked.seq fake_human_exomes_full.filtered.CpGmasked.stats.txt fuli 2.5 > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.2.5.tmp.seq
+	grep -c "chr" filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.2.5.tmp.seq > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.2.5.tmp.seq.count
+	cat filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.2.5.tmp.seq.count filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.2.5.tmp.seq > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.2.5.seq
+	rm filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.2.5.tmp.seq*
+	
+filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.3.0.seq : fake_human_exomes_full.filtered.CpGmasked.seq fake_human_exomes_full.filtered.CpGmasked.stats.txt
+	@echo "# === Filtering loci - Removing |Fu & Li's D| > 3.0 sequences ================= #";
+	perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_full.filtered.CpGmasked.seq fake_human_exomes_full.filtered.CpGmasked.stats.txt fuli 3.0 > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.3.0.tmp.seq
+	grep -c "chr" filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.3.0.tmp.seq > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.3.0.tmp.seq.count
+	cat filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.3.0.tmp.seq.count filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.3.0.tmp.seq > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.3.0.seq
+	rm filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.3.0.tmp.seq*
 
 # -------------------------------------------------------------------------------------- #
 # --- Filter sequences - Fu & Li's D*
 # -------------------------------------------------------------------------------------- #
  
-# perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_FULL.filtered.CpGmasked.seq fake_human_exomes_FULL.filtered.CpGmasked.stats.txt fuli_star 2 > filtered/human.CpG.fuli_star.2.0.seq
-# perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_FULL.filtered.CpGmasked.seq fake_human_exomes_FULL.filtered.CpGmasked.stats.txt fuli_star 2.5 > filtered/human.CpG.fuli_star.2.5.seq
-# perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_FULL.filtered.CpGmasked.seq fake_human_exomes_FULL.filtered.CpGmasked.stats.txt fuli_star 3 > filtered/human.CpG.fuli_star.3.0.seq
+# Fu & Li's D* filtered seq files depend on original CpG-masked sequence file and stats file
+filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.2.0.seq : fake_human_exomes_full.filtered.CpGmasked.seq fake_human_exomes_full.filtered.CpGmasked.stats.txt
+	@echo "# === Filtering loci - Removing |Fu & Li's D*| > 2.0 sequences ================ #";
+	perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_full.filtered.CpGmasked.seq fake_human_exomes_full.filtered.CpGmasked.stats.txt fuli_star 2.0 > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.2.0.tmp.seq
+	grep -c "chr" filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.2.0.tmp.seq > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.2.0.tmp.seq.count
+	cat filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.2.0.tmp.seq.count filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.2.0.tmp.seq > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.2.0.seq
+	rm filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.2.0.tmp.seq*
+
+filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.2.5.seq : fake_human_exomes_full.filtered.CpGmasked.seq fake_human_exomes_full.filtered.CpGmasked.stats.txt
+	@echo "# === Filtering loci - Removing |Fu & Li's D*| > 2.5 sequences ================ #";
+	perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_full.filtered.CpGmasked.seq fake_human_exomes_full.filtered.CpGmasked.stats.txt fuli_star 2.5 > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.2.5.tmp.seq
+	grep -c "chr" filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.2.5.tmp.seq > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.2.5.tmp.seq.count
+	cat filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.2.5.tmp.seq.count filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.2.5.tmp.seq > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.2.5.seq
+	rm filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.2.5.tmp.seq*
+
+filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.3.0.seq : fake_human_exomes_full.filtered.CpGmasked.seq fake_human_exomes_full.filtered.CpGmasked.stats.txt
+	@echo "# === Filtering loci - Removing |Fu & Li's D*| > 3.0 sequences ================ #";
+	perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_full.filtered.CpGmasked.seq fake_human_exomes_full.filtered.CpGmasked.stats.txt fuli_star 3.0 > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.3.0.tmp.seq
+	grep -c "chr" filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.3.0.tmp.seq > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.3.0.tmp.seq.count
+	cat filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.3.0.tmp.seq.count filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.3.0.tmp.seq > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.3.0.seq
+	rm filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.3.0.tmp.seq*
 
 # -------------------------------------------------------------------------------------- #
 # --- Filter sequences - GC percentage
 # -------------------------------------------------------------------------------------- #
 
-# perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_FULL.filtered.CpGmasked.seq fake_human_exomes_FULL.filtered.CpGmasked.stats.txt gc 0.5 > filtered/human.CpG.gc.50.seq
-# perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_FULL.filtered.CpGmasked.seq fake_human_exomes_FULL.filtered.CpGmasked.stats.txt gc 0.55 > filtered/human.CpG.gc.55.seq
-# perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_FULL.filtered.CpGmasked.seq fake_human_exomes_FULL.filtered.CpGmasked.stats.txt gc 0.6 > filtered/human.CpG.gc.60.seq
+# GC filtered seq files depend on original CpG-masked sequence file and stats file
+filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.50.seq : fake_human_exomes_full.filtered.CpGmasked.seq fake_human_exomes_full.filtered.CpGmasked.stats.txt
+	@echo "# === Filtering loci - Removing GC > 50% sequences ============================ #";
+	perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_full.filtered.CpGmasked.seq fake_human_exomes_full.filtered.CpGmasked.stats.txt gc 0.50 > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.50.tmp.seq
+	grep -c "chr" filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.50.tmp.seq > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.50.tmp.seq.count
+	cat filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.50.tmp.seq.count filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.50.tmp.seq > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.50.seq
+	rm filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.50.tmp.seq*
 
-# -------------------------------------------------------------------------------------- #
-# --- Fix header (with loci number) of all filtered seq files
-# -------------------------------------------------------------------------------------- #
+filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.55.seq : fake_human_exomes_full.filtered.CpGmasked.seq fake_human_exomes_full.filtered.CpGmasked.stats.txt
+	@echo "# === Filtering loci - Removing GC > 55% sequences ============================ #";
+	perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_full.filtered.CpGmasked.seq fake_human_exomes_full.filtered.CpGmasked.stats.txt gc 0.55 > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.55.tmp.seq
+	grep -c "chr" filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.55.tmp.seq > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.55.tmp.seq.count
+	cat filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.55.tmp.seq.count filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.55.tmp.seq > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.55.seq
+	rm filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.55.tmp.seq*
+
+filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.60.seq : fake_human_exomes_full.filtered.CpGmasked.seq fake_human_exomes_full.filtered.CpGmasked.stats.txt
+	@echo "# === Filtering loci - Removing GC > 60% sequences ============================ #";
+	perl scripts/remove_various_outlier_seqs.pl fake_human_exomes_full.filtered.CpGmasked.seq fake_human_exomes_full.filtered.CpGmasked.stats.txt gc 0.60 > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.60.tmp.seq
+	grep -c "chr" filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.60.tmp.seq > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.60.tmp.seq.count
+	cat filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.60.tmp.seq.count filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.60.tmp.seq > filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.60.seq
+	rm filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.60.tmp.seq*
 
 # -------------------------------------------------------------------------------------- #
 # --- Compute pop gen stats on filtered datasets
