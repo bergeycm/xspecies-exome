@@ -41,13 +41,15 @@ filter_taj : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.2.0.seq
 filter_fuli : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.2.0.seq filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.2.5.seq filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.3.0.seq
 filter_fuli_star : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.2.0.seq filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.2.5.seq filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.3.0.seq
 filter_gc : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.50.seq filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.55.seq filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.60.seq
+get_filtered_seq_stats : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.noNA.stats.txt filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.2.0.stats.txt filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.2.5.stats.txt filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.3.0.stats.txt filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.2.0.stats.txt filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.2.5.stats.txt filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.3.0.stats.txt filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.2.0.stats.txt filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.2.5.stats.txt filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.3.0.stats.txt filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.50.stats.txt filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.55.stats.txt filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.60.stats.txt
+estimate_mu : filtered_seqs/mu_estimates.txt
 
 # Group steps together
 
 prelim_grab_genome : liftover_bed_full liftover_bed_untr clean_bed_full clean_bed_untr merge_bed_full merge_bed_untr grab_genome_seq_full grab_genome_seq_untr 
 prelim_grab_chimp : liftover_to_chimp_full liftover_to_chimp_untr clean_chimp_bed_full clean_chimp_bed_untr grab_chimp_seq_full grab_chimp_seq_untr
 generate_exomes : make_exomes_full make_exomes_untr autosomes_only_full autosomes_only_untr filter_seq_full filter_seq_untr mask_CpG_full mask_CpG_untr
-filter_seqs : get_stats_pre_filter filter_noNA filter_taj filter_fuli filter_fuli_star filter_gc
+filter_seqs : get_stats_pre_filter filter_noNA filter_taj filter_fuli filter_fuli_star filter_gc get_filtered_seq_stats estimate_mu
 
 all : prelim_grab_genome prelim_grab_chimp generate_exomes filter_seqs
 
@@ -449,15 +451,25 @@ filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.60.seq : fake_human_e
 # --- Compute pop gen stats on filtered datasets
 # -------------------------------------------------------------------------------------- #
 
-# perl scripts/get_aln_stats_all_loci_human.pl *.seq
-# Automatically makes *.stats.txt
+# Skip running perl scripts/get_aln_stats_all_loci_human.pl since it takes awhile
+# Instead just grab the results from the original unfiltered seq file's *.stats.txt file
+
+# Filtered stats files depend on filtered seq files
+filtered_seqs/%.stats.txt : filtered_seqs/%.seq
+	@echo "# === Getting stats on filtered loci... ======================================= #";
+	head -n1 fake_human_exomes_full.filtered.CpGmasked.stats.txt > $@
+	grep "chr" $^ | cut -d' ' -f 1 > $^.tmp.chr
+	awk 'FNR==NR{a[$$1]=$$1;next}{if (a[$$1]) { print $$0 }}' $^.tmp.chr fake_human_exomes_full.filtered.CpGmasked.stats.txt >> $@
+	rm $^.tmp.chr
 
 # -------------------------------------------------------------------------------------- #
-# --- Compute mu for all seq files
+# --- Compute mu (as pi per site) for all seq files
 # -------------------------------------------------------------------------------------- #
 
-# Estimate mu as pi per site 
-# From each *.stats.txt, using estimate_mu_from_pi.R
+# File of mu estimates depends on all stats files
+filtered_seqs/mu_estimates.txt : fake_human_exomes_full.filtered.CpGmasked.stats.txt filtered_seqs/*.stats.txt
+	@echo "# === Estimating mu from sequences ============================================ #";
+	Rscript scripts/estimate_mu_from_pi.R > filtered_seqs/mu_estimates.txt
 
 # ====================================================================================== #
 # -------------------------------------------------------------------------------------- #
