@@ -50,6 +50,10 @@ filter_ccds_masked : fake_human_exomes_full.filtered.CpGmasked.noCCDS.filtered.s
 find_codons : data/hg18_refGene_codon2.bed
 combine_codons : data/hg18_refGene_codon12.bed data/hg18_refGene_codon12NA.bed
 codon_masking : fake_human_exomes_full.filtered.CpGmasked.noCodon2.seq fake_human_exomes_full.filtered.CpGmasked.noCodon12.seq fake_human_exomes_full.filtered.CpGmasked.noCodon12NA.seq
+# --- randomly_subset
+get_loci_list : data/neutralLoci-7genomes_locus_list.txt
+subset_full_untr : subsets/full_subset5.seq subsets/untr_subset5.seq
+subset_filtered : subsets/noNA_subset5.seq subsets/taj.2.0_subset5.seq subsets/taj.3.0_subset5.seq subsets/fuli.2.0_subset5.seq subsets/fuli.3.0_subset5.seq
 
 # Group steps together
 
@@ -59,8 +63,9 @@ generate_exomes : make_exomes_full make_exomes_untr autosomes_only_full autosome
 filter_seqs : get_stats_pre_filter filter_noNA filter_taj filter_fuli filter_fuli_star filter_gc get_filtered_seq_stats estimate_mu
 make_ccds_masked : mask_ccds filter_ccds_masked
 mask_by_codon : find_codons combine_codons codon_masking
+randomly_subset : get_loci_list subset_full_untr subset_filtered
 
-all : prelim_grab_genome prelim_grab_chimp generate_exomes filter_seqs make_ccds_masked mask_by_codon
+all : prelim_grab_genome prelim_grab_chimp generate_exomes filter_seqs make_ccds_masked mask_by_codon randomly_subset
 
 SHELL_EXPORT := 
 
@@ -592,7 +597,98 @@ fake_human_exomes_full.filtered.CpGmasked.noCodon12NA.seq : fake_human_exomes_fu
 # -------------------------------------------------------------------------------------- #
 # ====================================================================================== #
 
-# Use filtering_scripts/randomly_subset_seqs.pl
+# -------------------------------------------------------------------------------------- #
+# --- Get list of loci used in Gronau et al. 2011's whole genome dataset
+# -------------------------------------------------------------------------------------- #
+
+# Loci list depends on whole genome seq file
+data/neutralLoci-7genomes_locus_list.txt : data/neutralLoci-7genomes.txt
+	@echo "# === Getting list of loci in whole genome dataset ============================ #";
+	grep "^chr" data/neutralLoci-7genomes.txt | cut -f1 > data/neutralLoci-7genomes_locus_list.txt
+
+# -------------------------------------------------------------------------------------- #
+# --- Make subset of neutral dataset that is the same size as [full dataset]
+# -------------------------------------------------------------------------------------- #
+
+# Subset seq file depends on original sequence file (for size), neutral loci list file, and neutral loci seq file
+subsets/full_subset5.seq : fake_human_exomes_full.filtered.CpGmasked.seq data/neutralLoci-7genomes_locus_list.txt data/neutralLoci-7genomes.txt
+	@echo "# === Making subset of neutral dataset same size as [full dataset] ============ #";
+	for number in 1 2 3 4 5; do \
+		head -n1 $< > subsets/full_subset$${number}.seq; \
+		perl scripts/randomly_subset_seqs.pl `head -n1 $<` >> subsets/full_subset$${number}.seq; \
+	done
+
+# -------------------------------------------------------------------------------------- #
+# --- Make subset of neutral dataset that is the same size as [untranscribed dataset]
+# -------------------------------------------------------------------------------------- #
+
+# Subset seq file depends on original sequence file (for size), neutral loci list file, and neutral loci seq file
+subsets/untr_subset5.seq : fake_human_exomes_untr.filtered.CpGmasked.seq data/neutralLoci-7genomes_locus_list.txt data/neutralLoci-7genomes.txt
+	@echo "# === Making subset of neutral dataset same size as [untranscribed dataset] === #";
+	for number in 1 2 3 4 5; do \
+		head -n1 $< > subsets/untr_subset$${number}.seq; \
+		perl scripts/randomly_subset_seqs.pl `head -n1 $<` >> subsets/untr_subset$${number}.seq; \
+	done
+
+# -------------------------------------------------------------------------------------- #
+# --- Make subset of neutral dataset that is the same size as [no NA dataset]
+# -------------------------------------------------------------------------------------- #
+
+# Subset seq file depends on original sequence file (for size), neutral loci list file, and neutral loci seq file
+subsets/noNA_subset5.seq : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.noNA.seq data/neutralLoci-7genomes_locus_list.txt data/neutralLoci-7genomes.txt
+	@echo "# === Making subset of neutral dataset same size as [no NA dataset] =========== #";
+	for number in 1 2 3 4 5; do \
+		head -n1 $< > subsets/noNA_subset$${number}.seq; \
+		perl scripts/randomly_subset_seqs.pl `head -n1 $<` >> subsets/noNA_subset$${number}.seq; \
+	done
+
+# -------------------------------------------------------------------------------------- #
+# --- Make subset of neutral dataset that is the same size as [Tajima's D < 2.0 dataset]
+# -------------------------------------------------------------------------------------- #
+
+# Subset seq file depends on original sequence file (for size), neutral loci list file, and neutral loci seq file
+subsets/taj.2.0_subset5.seq : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.2.0.seq data/neutralLoci-7genomes_locus_list.txt data/neutralLoci-7genomes.txt
+	@echo "# === Making subset of neutral dataset same size as [Tajima 2.0 dataset] ====== #";
+	for number in 1 2 3 4 5; do \
+		head -n1 $< > subsets/taj.2.0_subset$${number}.seq; \
+		perl scripts/randomly_subset_seqs.pl `head -n1 $<` >> subsets/taj.2.0_subset$${number}.seq; \
+	done
+
+# -------------------------------------------------------------------------------------- #
+# --- Make subset of neutral dataset that is the same size as [Tajima's D < 3.0 dataset]
+# -------------------------------------------------------------------------------------- #
+
+# Subset seq file depends on original sequence file (for size), neutral loci list file, and neutral loci seq file
+subsets/taj.3.0_subset5.seq : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.3.0.seq data/neutralLoci-7genomes_locus_list.txt data/neutralLoci-7genomes.txt
+	@echo "# === Making subset of neutral dataset same size as [Tajima 3.0 dataset] ====== #";
+	for number in 1 2 3 4 5; do \
+		head -n1 $< > subsets/taj.3.0_subset$${number}.seq; \
+		perl scripts/randomly_subset_seqs.pl `head -n1 $<` >> subsets/taj.3.0_subset$${number}.seq; \
+	done
+
+# -------------------------------------------------------------------------------------- #
+# --- Make subset of neutral dataset that is the same size as [Fu & Li's D < 2.0 dataset]
+# -------------------------------------------------------------------------------------- #
+
+# Subset seq file depends on original sequence file (for size), neutral loci list file, and neutral loci seq file
+subsets/fuli.2.0_subset5.seq : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.2.0.seq data/neutralLoci-7genomes_locus_list.txt data/neutralLoci-7genomes.txt
+	@echo "# === Making subset of neutral dataset same size as [Fu & Li 2.0 dataset] ===== #";
+	for number in 1 2 3 4 5; do \
+		head -n1 $< > subsets/fuli.2.0_subset$${number}.seq; \
+		perl scripts/randomly_subset_seqs.pl `head -n1 $<` >> subsets/fuli.2.0_subset$${number}.seq; \
+	done
+
+# -------------------------------------------------------------------------------------- #
+# --- Make subset of neutral dataset that is the same size as [Fu & Li's D < 3.0 dataset]
+# -------------------------------------------------------------------------------------- #
+
+# Subset seq file depends on original sequence file (for size), neutral loci list file, and neutral loci seq file
+subsets/fuli.3.0_subset5.seq : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.3.0.seq data/neutralLoci-7genomes_locus_list.txt data/neutralLoci-7genomes.txt
+	@echo "# === Making subset of neutral dataset same size as [Fu & Li 3.0 dataset] ===== #";
+	for number in 1 2 3 4 5; do \
+		head -n1 $< > subsets/fuli.3.0_subset$${number}.seq; \
+		perl scripts/randomly_subset_seqs.pl `head -n1 $<` >> subsets/fuli.3.0_subset$${number}.seq; \
+	done
 
 # ====================================================================================== #
 # -------------------------------------------------------------------------------------- #

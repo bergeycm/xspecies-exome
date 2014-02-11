@@ -3,16 +3,11 @@
 use strict;
 use warnings;
 
-#my $subset_n = 3197;	# Number of loci in full exome
-#my $subset_n = 3157;	# Number of loci with filter Fu & Li's |D| < 2.0
-#my $subset_n = 3102;	# Number of loci with filter Fu & Li's |D| < 2.5
-#my $subset_n = 3095;	# Number of loci with filter Fu & Li's |D| < 3.0
-
 my $subset_n = shift;
 chomp $subset_n;
 
-my $locus_list_file = "gronau_locus_list.txt";
-my $seq_file = "neutralLoci-7genomes.txt";
+my $locus_list_file = "data/neutralLoci-7genomes_locus_list.txt";
+my $seq_file = "data/neutralLoci-7genomes.txt";
 
 # Read locus names into an array
 
