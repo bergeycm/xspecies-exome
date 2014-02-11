@@ -54,6 +54,24 @@ codon_masking : fake_human_exomes_full.filtered.CpGmasked.noCodon2.seq fake_huma
 get_loci_list : data/neutralLoci-7genomes_locus_list.txt
 subset_full_untr : subsets/full_subset5.seq subsets/untr_subset5.seq
 subset_filtered : subsets/noNA_subset5.seq subsets/taj.2.0_subset5.seq subsets/taj.3.0_subset5.seq subsets/fuli.2.0_subset5.seq subsets/fuli.3.0_subset5.seq
+# --- run_gphocs
+make_ctl_files_orig : fake_human_exomes_full.filtered.CpGmasked.iter1.ctl fake_human_exomes_untr.filtered.CpGmasked.iter1.ctl 
+make_ctl_files_noNA : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.noNA.iter1.ctl
+make_ctl_files_taj : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.2.0.iter1.ctl filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.2.5.iter1.ctl filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.3.0.iter1.ctl
+make_ctl_files_fuli : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.2.0.iter1.ctl filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.2.5.iter1.ctl filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.3.0.iter1.ctl
+make_ctl_files_fuli_star : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.2.0.iter1.ctl filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.2.5.iter1.ctl filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.3.0.iter1.ctl
+make_ctl_files_gc : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.50.iter1.ctl filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.55.iter1.ctl filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.60.iter1.ctl
+make_ctl_files_ccds : fake_human_exomes_full.filtered.CpGmasked.noCCDS.filtered.iter1.ctl
+make_ctl_files_codon : fake_human_exomes_full.filtered.CpGmasked.noCodon2.iter1.ctl fake_human_exomes_full.filtered.CpGmasked.noCodon12.iter1.ctl fake_human_exomes_full.filtered.CpGmasked.noCodon12NA.iter1.ctl
+make_ctl_files_subsets_full : subsets/full_subset1.iter1.ctl subsets/full_subset2.iter1.ctl subsets/full_subset3.iter1.ctl subsets/full_subset4.iter1.ctl subsets/full_subset5.iter1.ctl
+make_ctl_files_subsets_untr : subsets/untr_subset1.iter1.ctl subsets/untr_subset2.iter1.ctl subsets/untr_subset3.iter1.ctl subsets/untr_subset4.iter1.ctl subsets/untr_subset5.iter1.ctl
+make_ctl_files_subsets_noNA : subsets/noNA_subset1.iter1.ctl subsets/noNA_subset2.iter1.ctl subsets/noNA_subset3.iter1.ctl subsets/noNA_subset4.iter1.ctl subsets/noNA_subset5.iter1.ctl 
+make_ctl_files_subsets_taj.2.0 : subsets/taj.2.0_subset1.iter1.ctl subsets/taj.2.0_subset2.iter1.ctl subsets/taj.2.0_subset3.iter1.ctl subsets/taj.2.0_subset4.iter1.ctl subsets/taj.2.0_subset5.iter1.ctl
+make_ctl_files_subsets_taj.3.0 : subsets/taj.3.0_subset1.iter1.ctl subsets/taj.3.0_subset2.iter1.ctl subsets/taj.3.0_subset3.iter1.ctl subsets/taj.3.0_subset4.iter1.ctl subsets/taj.3.0_subset5.iter1.ctl 
+make_ctl_files_subsets_fuli.2.0 : subsets/fuli.2.0_subset1.iter1.ctl subsets/fuli.2.0_subset2.iter1.ctl subsets/fuli.2.0_subset3.iter1.ctl subsets/fuli.2.0_subset4.iter1.ctl subsets/fuli.2.0_subset5.iter1.ctl 
+make_ctl_files_subsets_fuli.3.0 : subsets/fuli.3.0_subset1.iter1.ctl subsets/fuli.3.0_subset2.iter1.ctl subsets/fuli.3.0_subset3.iter1.ctl subsets/fuli.3.0_subset4.iter1.ctl subsets/fuli.3.0_subset5.iter1.ctl 
+make_ctl_all_filtered : make_ctl_files_noNA make_ctl_files_taj make_ctl_files_fuli make_ctl_files_fuli_star make_ctl_files_gc
+make_ctl_files_all_subsets : make_ctl_files_subsets_full make_ctl_files_subsets_untr make_ctl_files_subsets_noNA make_ctl_files_subsets_taj.2.0 make_ctl_files_subsets_taj.3.0 make_ctl_files_subsets_fuli.2.0 make_ctl_files_subsets_fuli.3.0
 
 # Group steps together
 
@@ -64,8 +82,9 @@ filter_seqs : get_stats_pre_filter filter_noNA filter_taj filter_fuli filter_ful
 make_ccds_masked : mask_ccds filter_ccds_masked
 mask_by_codon : find_codons combine_codons codon_masking
 randomly_subset : get_loci_list subset_full_untr subset_filtered
+run_gphocs : make_ctl_files_orig make_ctl_all_filtered make_ctl_files_ccds make_ctl_files_codon make_ctl_files_all_subsets
 
-all : prelim_grab_genome prelim_grab_chimp generate_exomes filter_seqs make_ccds_masked mask_by_codon randomly_subset
+all : prelim_grab_genome prelim_grab_chimp generate_exomes filter_seqs make_ccds_masked mask_by_codon randomly_subset run_gphocs
 
 SHELL_EXPORT := 
 
@@ -696,10 +715,22 @@ subsets/fuli.3.0_subset5.seq : filtered_seqs/fake_human_exomes_full.filtered.CpG
 # -------------------------------------------------------------------------------------- #
 # ====================================================================================== #
 
-# Make ctl file human_exome_FULL.ctl (and for untr)
-# and PBS file call_gphocs_FULL.pbs (and for untr)
+# -------------------------------------------------------------------------------------- #
+# --- Replace SEQ_FILE_HERE in human_exome_template.ctl to make new control files
+# -------------------------------------------------------------------------------------- #
 
-# Run G-PhoCS, twice for each
+# Control file for this run depends on template control file
+%.iter1.ctl : human_exome_template.ctl
+	@echo "# === Making control file... ================================================== #";
+	$(eval filename = $*.seq)
+	sed -e "s:SEQ_FILE_HERE:$${filename}:g" $< | sed -e "s/.seq.trace.log/.iter1.trace.log/" > $@
+	sed -e "s/iter1/iter2/" $@ > $(subst iter1,iter2,$@)
+
+# -------------------------------------------------------------------------------------- #
+# --- Run G-PhoCS, twice for each control file
+# -------------------------------------------------------------------------------------- #
+
+# qsub -v CONTROL_FILE="human_exome_full.ctl" call_gphocs.pbs
 
 # ====================================================================================== #
 # -------------------------------------------------------------------------------------- #
