@@ -45,6 +45,11 @@ get_filtered_seq_stats : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked
 estimate_mu : filtered_seqs/mu_estimates.txt
 # --- make_ccds_masked
 mask_ccds : fake_human_exomes_full.filtered.CpGmasked.noCCDS.seq
+filter_ccds_masked : fake_human_exomes_full.filtered.CpGmasked.noCCDS.filtered.seq
+# --- mask_by_codon
+find_codons : data/hg18_refGene_codon2.bed
+combine_codons : data/hg18_refGene_codon12.bed data/hg18_refGene_codon12NA.bed
+codon_masking : fake_human_exomes_full.filtered.CpGmasked.noCodon2.seq fake_human_exomes_full.filtered.CpGmasked.noCodon12.seq fake_human_exomes_full.filtered.CpGmasked.noCodon12NA.seq
 
 # Group steps together
 
@@ -52,9 +57,10 @@ prelim_grab_genome : liftover_bed_full liftover_bed_untr clean_bed_full clean_be
 prelim_grab_chimp : liftover_to_chimp_full liftover_to_chimp_untr clean_chimp_bed_full clean_chimp_bed_untr grab_chimp_seq_full grab_chimp_seq_untr
 generate_exomes : make_exomes_full make_exomes_untr autosomes_only_full autosomes_only_untr filter_seq_full filter_seq_untr mask_CpG_full mask_CpG_untr
 filter_seqs : get_stats_pre_filter filter_noNA filter_taj filter_fuli filter_fuli_star filter_gc get_filtered_seq_stats estimate_mu
-make_ccds_masked : mask_ccds
+make_ccds_masked : mask_ccds filter_ccds_masked
+mask_by_codon : find_codons combine_codons codon_masking
 
-all : prelim_grab_genome prelim_grab_chimp generate_exomes filter_seqs make_ccds_masked
+all : prelim_grab_genome prelim_grab_chimp generate_exomes filter_seqs make_ccds_masked mask_by_codon
 
 SHELL_EXPORT := 
 
@@ -497,10 +503,17 @@ fake_human_exomes_full.filtered.CpGmasked.noCCDS.seq : fake_human_exomes_full.fi
 	@echo "# === Masking CCDS regions - Full dataset ===================================== #";
 	${SHELL_EXPORT} perl scripts/mask_gphocs_seq.pl fake_human_exomes_full.filtered.CpGmasked.seq ${CCDS} > fake_human_exomes_full.filtered.CpGmasked.noCCDS.seq
 
+# -------------------------------------------------------------------------------------- #
+# --- Remove aberrant sequences from CCDS-masked seq file
+# -------------------------------------------------------------------------------------- #
 
-# perl remove_missing_sequences.pl fake_human_exomes_UNTR.CpGmasked.seq > fake_human_exomes_UNTR.CpGmasked.filtered.seq
-
-# Fix header
+# Filtered CCDS-masked sequence file depends on CCDS-masked seq file
+fake_human_exomes_full.filtered.CpGmasked.noCCDS.filtered.seq : fake_human_exomes_full.filtered.CpGmasked.noCCDS.seq
+	@echo "# === Filter CCDS-masked seq file ============================================= #";
+	perl scripts/filter_seq_file.pl fake_human_exomes_full.filtered.CpGmasked.noCCDS.seq > fake_human_exomes_full.filtered.CpGmasked.noCCDS_tmp.seq
+	grep -c "chr" fake_human_exomes_full.filtered.CpGmasked.noCCDS_tmp.seq > fake_human_exomes_full.filtered.CpGmasked.noCCDS_tmp.seq.count
+	cat fake_human_exomes_full.filtered.CpGmasked.noCCDS_tmp.seq.count fake_human_exomes_full.filtered.CpGmasked.noCCDS_tmp.seq > fake_human_exomes_full.filtered.CpGmasked.noCCDS.filtered.seq
+	rm fake_human_exomes_full.filtered.CpGmasked.noCCDS_tmp.seq*
 
 # ====================================================================================== #
 # -------------------------------------------------------------------------------------- #
@@ -508,16 +521,70 @@ fake_human_exomes_full.filtered.CpGmasked.noCCDS.seq : fake_human_exomes_full.fi
 # -------------------------------------------------------------------------------------- #
 # ====================================================================================== #
 
-# Find codon locations with RefGene and get_codons_from_refgene.R
+# -------------------------------------------------------------------------------------- #
+# --- Find codon locations from RefGene file
+# -------------------------------------------------------------------------------------- #
 
-# Get rid of anything with only one column:
-# awk -F'\t' '$2 != ""' hg18_refGene_codon1.bed > hg18_refGene_codon1.fixed.bed
+# Last BED file of codon positions depends on data/refGene.txt file
+data/hg18_refGene_codon2.bed : data/hg18_refGene.txt
+	@echo "# === Find codon positions from RefGene ======================================= #";
+	Rscript scripts/get_codons_from_refgene.R
 
-# Combine codons to get [1st and 2nd] and [1st, 2nd, and NA]
+# -------------------------------------------------------------------------------------- #
+# --- Combine codons to get [1st and 2nd] and [1st, 2nd, and NA] and sort BED files
+# -------------------------------------------------------------------------------------- #
 
-# Sort with BEDtools’ sortBed
+# BED file of 1st and 2nd codons depends on BED files of 1st and of 2nd and on BEDtools
+data/hg18_refGene_codon12.bed : data/hg18_refGene_codon1.bed data/hg18_refGene_codon2.bed ${BEDTOOLS}/*
+	@echo "# === Combining and sorting codon BED files [1st and 2nd] ===================== #";
+	cat data/hg18_refGene_codon1.bed data/hg18_refGene_codon2.bed | ${BEDTOOLS}/sortBed -i stdin > data/hg18_refGene_codon12.bed
 
-# Mask by codon
+# BED file of 1st, 2nd, and unknown codons depends on BED files of 1st, of 2nd, and of NA and on BEDtools
+data/hg18_refGene_codon12NA.bed : data/hg18_refGene_codon1.bed data/hg18_refGene_codon2.bed data/hg18_refGene_unknown.bed ${BEDTOOLS}/*
+	@echo "# === Combining and sorting codon BED files [1st, 2nd, and NA] ================ #";
+	cat data/hg18_refGene_codon1.bed data/hg18_refGene_codon2.bed data/hg18_refGene_unknown.bed | ${BEDTOOLS}/sortBed -i stdin > data/hg18_refGene_codon12NA.bed
+
+# -------------------------------------------------------------------------------------- #
+# --- Mask full seq file by codon - Mask [2nd]
+# -------------------------------------------------------------------------------------- #
+
+# Parallel version exists too. Call with:
+# qsub -t 1-3349:100 pbs/mask_codon2_parallel.pbs
+# Then recombine output with:
+# cat `ls -v mask_codon2_parallel*.o*` > fake_human_exomes_full.filtered.CpGmasked.noCodon2.seq
+
+# Masked seq file depends on original seq file and codon BED
+fake_human_exomes_full.filtered.CpGmasked.noCodon2.seq : fake_human_exomes_full.filtered.CpGmasked.seq data/hg18_refGene_codon2.bed
+	@echo "# === Masking out 2nd codons ================================================== #";
+	perl scripts/mask_gphocs_seq.pl fake_human_exomes_full.filtered.CpGmasked.seq data/hg18_refGene_codon2.bed > fake_human_exomes_full.filtered.CpGmasked.noCodon2.seq
+
+# -------------------------------------------------------------------------------------- #
+# --- Mask full seq file by codon - Mask [1st and 2nd]
+# -------------------------------------------------------------------------------------- #
+
+# Parallel version exists too. Call with:
+# qsub -t 1-3349:100 pbs/mask_codon12_parallel.pbs
+# Then recombine output with:
+# cat `ls -v mask_codon12_parallel*.o*` > fake_human_exomes_full.filtered.CpGmasked.noCodon12.seq
+
+# Masked seq file depends on original seq file and codon BED
+fake_human_exomes_full.filtered.CpGmasked.noCodon12.seq : fake_human_exomes_full.filtered.CpGmasked.seq data/hg18_refGene_codon12.bed
+	@echo "# === Masking out 1st and 2nd codons ========================================== #";
+	perl scripts/mask_gphocs_seq.pl fake_human_exomes_full.filtered.CpGmasked.seq data/hg18_refGene_codon12.bed > fake_human_exomes_full.filtered.CpGmasked.noCodon12.seq
+
+# -------------------------------------------------------------------------------------- #
+# --- Mask full seq file by codon - Mask [1st, 2nd, and NA]
+# -------------------------------------------------------------------------------------- #
+
+# Parallel version exists too. Call with:
+# qsub -t 1-3349:100 pbs/mask_codon12NA_parallel.pbs
+# Then recombine output with:
+# cat `ls -v mask_codon12NA_parallel*.o*` > fake_human_exomes_full.filtered.CpGmasked.noCodon12NA.seq
+
+# Masked seq file depends on original seq file and codon BED
+fake_human_exomes_full.filtered.CpGmasked.noCodon12NA.seq : fake_human_exomes_full.filtered.CpGmasked.seq data/hg18_refGene_codon12NA.bed
+	@echo "# === Masking out 1st, 2nd, and unknown codons ================================ #";
+	perl scripts/mask_gphocs_seq.pl fake_human_exomes_full.filtered.CpGmasked.seq data/hg18_refGene_codon12NA.bed > fake_human_exomes_full.filtered.CpGmasked.noCodon12NA.seq
 
 # ====================================================================================== #
 # -------------------------------------------------------------------------------------- #

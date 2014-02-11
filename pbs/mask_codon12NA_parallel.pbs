@@ -1,7 +1,7 @@
 #!/bin/bash
 
-#PBS -l nodes=1:ppn=1,walltime=1:00:00
-#PBS -N mask_ccds_parallel
+#PBS -l nodes=1:ppn=1,walltime=8:00:00
+#PBS -N mask_codon12NA_parallel
 #PBS -M cmb433@nyu.edu
 #PBS -m abe
 #PBS -e localhost:/scratch/cmb433/xspecies-exome/${PBS_JOBNAME}.e${PBS_JOBID}.${PBS_ARRAYID}
@@ -21,20 +21,19 @@ cd $working_dir
 
 # There are 3349 sequences to run in the full dataset
 # Call with:
-# qsub -t 1-3349:100 pbs/mask_ccds_parallel.pbs
+# qsub -t 1-3349:100 pbs/mask_codon12NA_parallel.pbs
 
 # Then recombine output with:
-# cat `ls -v mask_ccds_parallel*.o*` > fake_human_exomes_full.filtered.CpGmasked.noCCDS.seq
+# cat `ls -v mask_codon12NA_parallel*.o*` > fake_human_exomes_full.filtered.CpGmasked.noCodon12NA.seq
 
 export BEDTOOLS=/home/cmb433/exome_macaque/bin/BEDTools-Version-2.13.4/bin
-export CCDS=./targets/ccdsGene.hg19.4apr12.bed
 
 TO_DO=100
 START=$PBS_ARRAYID
 
 perl scripts/mask_gphocs_seq_parallel.pl \
 	fake_human_exomes_full.filtered.CpGmasked.seq \
-	${CCDS} \
+	data/hg18_refGene_codon12NA.bed \
 	$START $TO_DO
 
 exit;
