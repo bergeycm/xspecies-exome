@@ -3,7 +3,7 @@
 # Download RefGene file from:
 # http://www.openbioinformatics.org/annovar/download/hg18_refGene.txt.gz
 
-refgene = read.table("hg18_refGene.txt")
+refgene = read.table("data/hg18_refGene.txt")
 
 # Change settings to avoid use of exponential notation (e.g. 1.81e+08)
 options("scipen"=100, "digits"=4)
@@ -57,38 +57,44 @@ get.codon.from.gene = function (rg, output = c("first", "second", "third", "unkn
 			
 			# Output coordinates in BED format
 			if (output == "first") {
-				cat(paste(
- 					paste(chr, firsts, sep="\t"), 
- 					(firsts+1), sep="\t"), sep="\n")
+				if (length(firsts) > 0) {
+					cat(paste(
+ 						paste(chr, firsts, sep="\t"), 
+ 						(firsts+1), sep="\t"), sep="\n")
+ 				}
 			} else if (output == "second") {
-				cat(paste(
- 					paste(chr, seconds, sep="\t"), 
- 					(seconds+1), sep="\t"), sep="\n")
+				if (length(seconds) > 0) {
+					cat(paste(
+ 						paste(chr, seconds, sep="\t"), 
+ 						(seconds+1), sep="\t"), sep="\n")
+ 				}
 			} else if (output == "third") {
-				cat(paste(
- 					paste(chr, thirds, sep="\t"), 
- 					(thirds+1), sep="\t"), sep="\n")
+				if (length(thirds) > 0) {
+					cat(paste(
+ 						paste(chr, thirds, sep="\t"), 
+ 						(thirds+1), sep="\t"), sep="\n")
+ 				}
  			}
 		}
 	}
 }
 
 # Run function to generate BED files for all unknown codons...
-sink(file="hg18_refGene_unknown.bed")
+sink(file="data/hg18_refGene_unknown.bed")
 	tmp = apply(refgene, 1, function(x) get.codon.from.gene(x, "unknown"))
 sink()
 
 # ...first codons...
-sink(file="hg18_refGene_codon1.bed")
+sink(file="data/hg18_refGene_codon1.bed")
 	tmp = apply(refgene, 1, function(x) get.codon.from.gene(x, "first"))
 sink()
 
 # ...and second codons....
-sink(file="hg18_refGene_codon2.bed")
+sink(file="data/hg18_refGene_codon2.bed")
 	tmp = apply(refgene, 1, function(x) get.codon.from.gene(x, "second"))
 sink()
 
-# ...and third codons.
-sink(file="hg18_refGene_codon3.bed")
-	tmp = apply(refgene, 1, function(x) get.codon.from.gene(x, "third"))
-sink()
+# Skip third codons.
+#sink(file="data/hg18_refGene_codon3.bed")
+#	tmp = apply(refgene, 1, function(x) get.codon.from.gene(x, "third"))
+#sink()
