@@ -43,6 +43,8 @@ filter_fuli_star : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_
 filter_gc : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.50.seq filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.55.seq filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.60.seq
 get_filtered_seq_stats : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.noNA.stats.txt filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.2.0.stats.txt filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.2.5.stats.txt filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.3.0.stats.txt filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.2.0.stats.txt filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.2.5.stats.txt filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.3.0.stats.txt filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.2.0.stats.txt filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.2.5.stats.txt filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.3.0.stats.txt filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.50.stats.txt filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.55.stats.txt filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.60.stats.txt
 estimate_mu : filtered_seqs/mu_estimates.txt
+# --- make_ccds_masked
+mask_ccds : fake_human_exomes_full.filtered.CpGmasked.noCCDS.seq
 
 # Group steps together
 
@@ -50,8 +52,9 @@ prelim_grab_genome : liftover_bed_full liftover_bed_untr clean_bed_full clean_be
 prelim_grab_chimp : liftover_to_chimp_full liftover_to_chimp_untr clean_chimp_bed_full clean_chimp_bed_untr grab_chimp_seq_full grab_chimp_seq_untr
 generate_exomes : make_exomes_full make_exomes_untr autosomes_only_full autosomes_only_untr filter_seq_full filter_seq_untr mask_CpG_full mask_CpG_untr
 filter_seqs : get_stats_pre_filter filter_noNA filter_taj filter_fuli filter_fuli_star filter_gc get_filtered_seq_stats estimate_mu
+make_ccds_masked : mask_ccds
 
-all : prelim_grab_genome prelim_grab_chimp generate_exomes filter_seqs
+all : prelim_grab_genome prelim_grab_chimp generate_exomes filter_seqs make_ccds_masked
 
 SHELL_EXPORT := 
 
@@ -477,7 +480,23 @@ filtered_seqs/mu_estimates.txt : fake_human_exomes_full.filtered.CpGmasked.stats
 # -------------------------------------------------------------------------------------- #
 # ====================================================================================== #
 
-# perl mask_gphocs_seq.pl fake_human_exomes_FULL.filtered.CpGmasked.seq ../xspecies-exome/targets/ccdsGene.hg19.4apr12.bed > fake_human_exomes_UNTR.filtered.CpGmasked.seq
+# -------------------------------------------------------------------------------------- #
+# --- Mask out CCDS regions of full dataset
+# -------------------------------------------------------------------------------------- #
+
+# Essentially this accomplishes the same goal as the UNTR dataset, 
+# but in this case the regions are masked, not removed.
+
+# Parallel version exists too. Call with:
+# qsub -t 1-3349:100 pbs/mask_ccds_parallel.pbs
+# Then recombine output with:
+# cat `ls -v mask_ccds_parallel*.o*` > fake_human_exomes_full.filtered.CpGmasked.noCCDS.seq
+
+# CCDS masked sequence file depends on CpG-masked sequence file
+fake_human_exomes_full.filtered.CpGmasked.noCCDS.seq : fake_human_exomes_full.filtered.CpGmasked.seq
+	@echo "# === Masking CCDS regions - Full dataset ===================================== #";
+	${SHELL_EXPORT} perl scripts/mask_gphocs_seq.pl fake_human_exomes_full.filtered.CpGmasked.seq ${CCDS} > fake_human_exomes_full.filtered.CpGmasked.noCCDS.seq
+
 
 # perl remove_missing_sequences.pl fake_human_exomes_UNTR.CpGmasked.seq > fake_human_exomes_UNTR.CpGmasked.filtered.seq
 
