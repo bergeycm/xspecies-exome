@@ -1,0 +1,24 @@
+#!/bin/bash
+
+#PBS -l nodes=1:ppn=1,walltime=96:00:00
+#PBS -N call_gphocs
+#PBS -M cmb433@nyu.edu
+#PBS -m abe
+#PBS -e localhost:/scratch/cmb433/xspecies-exome/${PBS_JOBNAME}.e${PBS_JOBID}
+#PBS -o localhost:/scratch/cmb433/xspecies-exome/${PBS_JOBNAME}.o${PBS_JOBID}
+
+# ------------------------------------------------------------------------------
+# Variables
+# ------------------------------------------------------------------------------
+
+working_dir=/scratch/cmb433/xspecies-exome
+
+# ------------------------------------------------------------------------------
+# Run pipeline
+# ------------------------------------------------------------------------------
+
+cd $working_dir
+
+~/exome_macaque/bin/G-PhoCS/bin/G-PhoCS-1-2-1 ${CONTROL_FILE}
+
+exit;
