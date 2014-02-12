@@ -773,12 +773,12 @@ subsets/fuli.3.0_subset5.seq : filtered_seqs/fake_human_exomes_full.filtered.CpG
 
 # 1st iteration trace files depend on seq file
 %.iter1.trace.log : %.seq
-	@echo "# === Calling G-PhoCS... ====================================================== #";
-	${GPHOCS}/G-PhoCS-1-2-1 %.iter1.ctl
+	@echo "# === Calling G-PhoCS on iteration 1... ======================================= #";
+	${GPHOCS}/G-PhoCS-1-2-1 $(subst trace.log,ctl,$@)
 
 # ...as do 2nd iteration trace files
 %.iter2.trace.log : %.seq
-	@echo "# === Calling G-PhoCS... ====================================================== #";
+	@echo "# === Calling G-PhoCS on iteration 2... ======================================= #";
 	${GPHOCS}/G-PhoCS-1-2-1 $(subst trace.log,ctl,$@)
 
 # ====================================================================================== #
