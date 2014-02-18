@@ -69,59 +69,13 @@ get_loci_list : data/neutralLoci-7genomes_locus_list.txt
 subset_full_untr : subsets/full_subset5.seq subsets/untr_subset5.seq
 subset_filtered : subsets/noNA_subset5.seq subsets/taj.2.0_subset5.seq subsets/taj.3.0_subset5.seq subsets/fuli.2.0_subset5.seq subsets/fuli.3.0_subset5.seq
 # --- prep_to_run_gphocs
-make_ctl_files_orig : fake_human_exomes_full.filtered.CpGmasked.iter1.ctl fake_human_exomes_untr.filtered.CpGmasked.iter1.ctl 
-make_ctl_files_noNA : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.noNA.iter1.ctl
-make_ctl_files_taj : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.2.0.iter1.ctl filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.2.5.iter1.ctl filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.3.0.iter1.ctl
-make_ctl_files_fuli : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.2.0.iter1.ctl filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.2.5.iter1.ctl filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.3.0.iter1.ctl
-make_ctl_files_fuli_star : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.2.0.iter1.ctl filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.2.5.iter1.ctl filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.3.0.iter1.ctl
-make_ctl_files_gc : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.50.iter1.ctl filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.55.iter1.ctl filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.60.iter1.ctl
-make_ctl_files_ccds : fake_human_exomes_full.filtered.CpGmasked.noCCDS.filtered.iter1.ctl
-make_ctl_files_codon : fake_human_exomes_full.filtered.CpGmasked.noCodon2.iter1.ctl fake_human_exomes_full.filtered.CpGmasked.noCodon12.iter1.ctl fake_human_exomes_full.filtered.CpGmasked.noCodon12NA.iter1.ctl
-make_ctl_files_subsets_full : subsets/full_subset1.iter1.ctl subsets/full_subset2.iter1.ctl subsets/full_subset3.iter1.ctl subsets/full_subset4.iter1.ctl subsets/full_subset5.iter1.ctl
-make_ctl_files_subsets_untr : subsets/untr_subset1.iter1.ctl subsets/untr_subset2.iter1.ctl subsets/untr_subset3.iter1.ctl subsets/untr_subset4.iter1.ctl subsets/untr_subset5.iter1.ctl
-make_ctl_files_subsets_noNA : subsets/noNA_subset1.iter1.ctl subsets/noNA_subset2.iter1.ctl subsets/noNA_subset3.iter1.ctl subsets/noNA_subset4.iter1.ctl subsets/noNA_subset5.iter1.ctl 
-make_ctl_files_subsets_taj.2.0 : subsets/taj.2.0_subset1.iter1.ctl subsets/taj.2.0_subset2.iter1.ctl subsets/taj.2.0_subset3.iter1.ctl subsets/taj.2.0_subset4.iter1.ctl subsets/taj.2.0_subset5.iter1.ctl
-make_ctl_files_subsets_taj.3.0 : subsets/taj.3.0_subset1.iter1.ctl subsets/taj.3.0_subset2.iter1.ctl subsets/taj.3.0_subset3.iter1.ctl subsets/taj.3.0_subset4.iter1.ctl subsets/taj.3.0_subset5.iter1.ctl 
-make_ctl_files_subsets_fuli.2.0 : subsets/fuli.2.0_subset1.iter1.ctl subsets/fuli.2.0_subset2.iter1.ctl subsets/fuli.2.0_subset3.iter1.ctl subsets/fuli.2.0_subset4.iter1.ctl subsets/fuli.2.0_subset5.iter1.ctl 
-make_ctl_files_subsets_fuli.3.0 : subsets/fuli.3.0_subset1.iter1.ctl subsets/fuli.3.0_subset2.iter1.ctl subsets/fuli.3.0_subset3.iter1.ctl subsets/fuli.3.0_subset4.iter1.ctl subsets/fuli.3.0_subset5.iter1.ctl 
-make_ctl_all_filtered : make_ctl_files_noNA make_ctl_files_taj make_ctl_files_fuli make_ctl_files_fuli_star make_ctl_files_gc
-make_ctl_files_all_subsets : make_ctl_files_subsets_full make_ctl_files_subsets_untr make_ctl_files_subsets_noNA make_ctl_files_subsets_taj.2.0 make_ctl_files_subsets_taj.3.0 make_ctl_files_subsets_fuli.2.0 make_ctl_files_subsets_fuli.3.0
-# --- run_gphocs_iter1
-call_gphocs_iter1_orig : fake_human_exomes_full.filtered.CpGmasked.iter1.trace.log fake_human_exomes_untr.filtered.CpGmasked.iter1.trace.log 
-call_gphocs_iter1_noNA : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.noNA.iter1.trace.log
-call_gphocs_iter1_taj : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.2.0.iter1.trace.log filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.2.5.iter1.trace.log filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.3.0.iter1.trace.log
-call_gphocs_iter1_fuli : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.2.0.iter1.trace.log filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.2.5.iter1.trace.log filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.3.0.iter1.trace.log
-call_gphocs_iter1_fuli_star : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.2.0.iter1.trace.log filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.2.5.iter1.trace.log filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.3.0.iter1.trace.log
-call_gphocs_iter1_gc : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.50.iter1.trace.log filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.55.iter1.trace.log filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.60.iter1.trace.log
-call_gphocs_iter1_ccds : fake_human_exomes_full.filtered.CpGmasked.noCCDS.filtered.iter1.trace.log
-call_gphocs_iter1_codon : fake_human_exomes_full.filtered.CpGmasked.noCodon2.iter1.trace.log fake_human_exomes_full.filtered.CpGmasked.noCodon12.iter1.trace.log fake_human_exomes_full.filtered.CpGmasked.noCodon12NA.iter1.trace.log
-call_gphocs_iter1_subsets_full : subsets/full_subset1.iter1.trace.log subsets/full_subset2.iter1.trace.log subsets/full_subset3.iter1.trace.log subsets/full_subset4.iter1.trace.log subsets/full_subset5.iter1.trace.log
-call_gphocs_iter1_subsets_untr : subsets/untr_subset1.iter1.trace.log subsets/untr_subset2.iter1.trace.log subsets/untr_subset3.iter1.trace.log subsets/untr_subset4.iter1.trace.log subsets/untr_subset5.iter1.trace.log
-call_gphocs_iter1_subsets_noNA : subsets/noNA_subset1.iter1.trace.log subsets/noNA_subset2.iter1.trace.log subsets/noNA_subset3.iter1.trace.log subsets/noNA_subset4.iter1.trace.log subsets/noNA_subset5.iter1.trace.log 
-call_gphocs_iter1_subsets_taj.2.0 : subsets/taj.2.0_subset1.iter1.trace.log subsets/taj.2.0_subset2.iter1.trace.log subsets/taj.2.0_subset3.iter1.trace.log subsets/taj.2.0_subset4.iter1.trace.log subsets/taj.2.0_subset5.iter1.trace.log
-call_gphocs_iter1_subsets_taj.3.0 : subsets/taj.3.0_subset1.iter1.trace.log subsets/taj.3.0_subset2.iter1.trace.log subsets/taj.3.0_subset3.iter1.trace.log subsets/taj.3.0_subset4.iter1.trace.log subsets/taj.3.0_subset5.iter1.trace.log 
-call_gphocs_iter1_subsets_fuli.2.0 : subsets/fuli.2.0_subset1.iter1.trace.log subsets/fuli.2.0_subset2.iter1.trace.log subsets/fuli.2.0_subset3.iter1.trace.log subsets/fuli.2.0_subset4.iter1.trace.log subsets/fuli.2.0_subset5.iter1.trace.log 
-call_gphocs_iter1_subsets_fuli.3.0 : subsets/fuli.3.0_subset1.iter1.trace.log subsets/fuli.3.0_subset2.iter1.trace.log subsets/fuli.3.0_subset3.iter1.trace.log subsets/fuli.3.0_subset4.iter1.trace.log subsets/fuli.3.0_subset5.iter1.trace.log 
-call_gphocs_all_iter1_filtered : call_gphocs_iter1_noNA call_gphocs_iter1_taj call_gphocs_iter1_fuli call_gphocs_iter1_fuli_star call_gphocs_iter1_gc
-call_gphocs_all_iter1_subsets : call_gphocs_iter1_subsets_full call_gphocs_iter1_subsets_untr call_gphocs_iter1_subsets_noNA call_gphocs_iter1_subsets_taj.2.0 call_gphocs_iter1_subsets_taj.3.0 call_gphocs_iter1_subsets_fuli.2.0 call_gphocs_iter1_subsets_fuli.3.0
-# --- run_gphocs_iter1
-call_gphocs_iter2_orig : fake_human_exomes_full.filtered.CpGmasked.iter2.trace.log fake_human_exomes_untr.filtered.CpGmasked.iter2.trace.log 
-call_gphocs_iter2_noNA : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.noNA.iter2.trace.log
-call_gphocs_iter2_taj : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.2.0.iter2.trace.log filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.2.5.iter2.trace.log filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.taj.3.0.iter2.trace.log
-call_gphocs_iter2_fuli : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.2.0.iter2.trace.log filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.2.5.iter2.trace.log filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli.3.0.iter2.trace.log
-call_gphocs_iter2_fuli_star : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.2.0.iter2.trace.log filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.2.5.iter2.trace.log filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.fuli_star.3.0.iter2.trace.log
-call_gphocs_iter2_gc : filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.50.iter2.trace.log filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.55.iter2.trace.log filtered_seqs/fake_human_exomes_full.filtered.CpGmasked.gc.60.iter2.trace.log
-call_gphocs_iter2_ccds : fake_human_exomes_full.filtered.CpGmasked.noCCDS.filtered.iter2.trace.log
-call_gphocs_iter2_codon : fake_human_exomes_full.filtered.CpGmasked.noCodon2.iter2.trace.log fake_human_exomes_full.filtered.CpGmasked.noCodon12.iter2.trace.log fake_human_exomes_full.filtered.CpGmasked.noCodon12NA.iter2.trace.log
-call_gphocs_iter2_subsets_full : subsets/full_subset1.iter2.trace.log subsets/full_subset2.iter2.trace.log subsets/full_subset3.iter2.trace.log subsets/full_subset4.iter2.trace.log subsets/full_subset5.iter2.trace.log
-call_gphocs_iter2_subsets_untr : subsets/untr_subset1.iter2.trace.log subsets/untr_subset2.iter2.trace.log subsets/untr_subset3.iter2.trace.log subsets/untr_subset4.iter2.trace.log subsets/untr_subset5.iter2.trace.log
-call_gphocs_iter2_subsets_noNA : subsets/noNA_subset1.iter2.trace.log subsets/noNA_subset2.iter2.trace.log subsets/noNA_subset3.iter2.trace.log subsets/noNA_subset4.iter2.trace.log subsets/noNA_subset5.iter2.trace.log 
-call_gphocs_iter2_subsets_taj.2.0 : subsets/taj.2.0_subset1.iter2.trace.log subsets/taj.2.0_subset2.iter2.trace.log subsets/taj.2.0_subset3.iter2.trace.log subsets/taj.2.0_subset4.iter2.trace.log subsets/taj.2.0_subset5.iter2.trace.log
-call_gphocs_iter2_subsets_taj.3.0 : subsets/taj.3.0_subset1.iter2.trace.log subsets/taj.3.0_subset2.iter2.trace.log subsets/taj.3.0_subset3.iter2.trace.log subsets/taj.3.0_subset4.iter2.trace.log subsets/taj.3.0_subset5.iter2.trace.log 
-call_gphocs_iter2_subsets_fuli.2.0 : subsets/fuli.2.0_subset1.iter2.trace.log subsets/fuli.2.0_subset2.iter2.trace.log subsets/fuli.2.0_subset3.iter2.trace.log subsets/fuli.2.0_subset4.iter2.trace.log subsets/fuli.2.0_subset5.iter2.trace.log 
-call_gphocs_iter2_subsets_fuli.3.0 : subsets/fuli.3.0_subset1.iter2.trace.log subsets/fuli.3.0_subset2.iter2.trace.log subsets/fuli.3.0_subset3.iter2.trace.log subsets/fuli.3.0_subset4.iter2.trace.log subsets/fuli.3.0_subset5.iter2.trace.log 
-call_gphocs_all_iter2_filtered : call_gphocs_iter2_noNA call_gphocs_iter2_taj call_gphocs_iter2_fuli call_gphocs_iter2_fuli_star call_gphocs_iter2_gc
-call_gphocs_all_iter2_subsets : call_gphocs_iter2_subsets_full call_gphocs_iter2_subsets_untr call_gphocs_iter2_subsets_noNA call_gphocs_iter2_subsets_taj.2.0 call_gphocs_iter2_subsets_taj.3.0 call_gphocs_iter2_subsets_fuli.2.0 call_gphocs_iter2_subsets_fuli.3.0
+CTL_FILES=$(SEQ_ALL:.seq=.iter1.ctl)
+make_ctl_files : ${CTL_FILES}
+# --- run_gphocs
+GPHOCS_ITER_1=$(SEQ_ALL:.seq=.iter1.trace.log)
+GPHOCS_ITER_2=$(SEQ_ALL:.seq=.iter2.trace.log)
+call_gphocs_iter_1 : ${GPHOCS_ITER_1}
+call_gphocs_iter_2 : ${GPHOCS_ITER_2}
 # --- summarize_gphocs
 RESULTS_ITER_1=$(SEQ_ALL:.seq=.iter1.results)
 RESULTS_ITER_2=$(SEQ_ALL:.seq=.iter2.results)
@@ -137,12 +91,11 @@ filter_seqs : get_stats_pre_filter filter_noNA filter_taj filter_fuli filter_ful
 make_ccds_masked : mask_ccds filter_ccds_masked
 mask_by_codon : find_codons combine_codons codon_masking
 randomly_subset : get_loci_list subset_full_untr subset_filtered
-prep_to_run_gphocs : make_ctl_files_orig make_ctl_all_filtered make_ctl_files_ccds make_ctl_files_codon make_ctl_files_all_subsets
-run_gphocs_iter1 : call_gphocs_iter1_orig call_gphocs_all_iter1_filtered call_gphocs_iter1_ccds call_gphocs_iter1_codon call_gphocs_all_iter1_subsets
-run_gphocs_iter2 : call_gphocs_iter2_orig call_gphocs_all_iter2_filtered call_gphocs_iter2_ccds call_gphocs_iter2_codon call_gphocs_all_iter2_subsets
+prep_to_run_gphocs : make_ctl_files
+run_gphocs : call_gphocs_iter_1 call_gphocs_iter_2
 summarize_gphocs : summarize_gphocs_iter_1 summarize_gphocs_iter_2
 
-all : prelim_grab_genome prelim_grab_chimp generate_exomes filter_seqs make_ccds_masked mask_by_codon randomly_subset prep_to_run_gphocs run_gphocs_iter1 run_gphocs_iter2 summarize_gphocs
+all : prelim_grab_genome prelim_grab_chimp generate_exomes filter_seqs make_ccds_masked mask_by_codon randomly_subset prep_to_run_gphocs run_gphocs summarize_gphocs
 
 SHELL_EXPORT := 
 
